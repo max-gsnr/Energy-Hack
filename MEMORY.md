@@ -128,3 +128,9 @@ Use visual layout/schematic only to make deviations understandable.
 
 The provider policy says the data is restricted to the hackathon and not public information. Raw data and large Parquet files are ignored in git. Teammates should import data locally with `scripts/import_data.sh`.
 
+## Repo Status
+
+- GitHub remote: `https://github.com/max-gsnr/Energy-Hack.git`
+- Initial organization commit pushed to `main`.
+- Raw downloaded data remains local and ignored.
+- Teammates should clone the repo, install dependencies, then run `bash scripts/import_data.sh`.
