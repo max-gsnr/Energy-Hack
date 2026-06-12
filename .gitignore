@@ -1,0 +1,18 @@
+.DS_Store
+.venv/
+node_modules/
+.cache/
+__pycache__/
+*.pyc
+dist/
+build/
+.env
+mlruns/
+
+# Provider data is restricted to the hackathon and large files exceed GitHub limits.
+# Keep the import script and manifest in git; keep downloaded data local.
+Data/Plant_A/
+Data/Plant_B/
+Data/Shared/
+!Data/README.md
+!Data/data_manifest.json

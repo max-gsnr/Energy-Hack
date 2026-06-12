@@ -1,0 +1,23 @@
+pandas
+openpyxl
+numpy
+pyarrow
+polars
+duckdb
+scikit-learn
+# On macOS, lightgbm and xgboost also need native libomp.dylib
+# (usually: brew install libomp). CatBoost below works without that here.
+lightgbm
+xgboost
+catboost
+matplotlib
+plotly
+joblib
+fastapi
+uvicorn
+pydantic
+shap
+mlflow
+optuna
+pvlib
+statsmodels

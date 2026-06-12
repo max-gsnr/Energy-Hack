@@ -1,0 +1,28 @@
+{
+  "source_folder": "https://drive.google.com/drive/folders/1SovCtF2XrvaHjSKlU19Cq0lNVTAPkoDU",
+  "policy": "Provider data is restricted to the hackathon and should not be committed as raw files.",
+  "canonical_files": [
+    {
+      "path": "Data/Plant_A/Main-monitoring-data/main_monitoring_data.parquet",
+      "drive_id": "13YbdSBfGz6tHfvEHf1mFzsYEp6fPeY_c",
+      "rows": 990442,
+      "columns": 206,
+      "purpose": "Plant A primary monitoring data"
+    },
+    {
+      "path": "Data/Plant_A/Errorcodes/errorcodes.parquet",
+      "drive_id": "1j4C-7L7aupKAax3XxhvtAxQatb45zx_0",
+      "rows": 990442,
+      "columns": 131,
+      "purpose": "Plant A inverter error and operational states"
+    },
+    {
+      "path": "Data/Plant_B/Main-monitoring-data/main_monitoring_data_plant_b.parquet",
+      "drive_id": "1HmZoVE0pBxHs4B4Rfsc0dFWCHAP67BkY",
+      "rows": 885297,
+      "columns": 118,
+      "purpose": "Plant B optional soiling-focused monitoring data"
+    }
+  ]
+}
+
