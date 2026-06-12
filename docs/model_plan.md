@@ -16,7 +16,9 @@ Use Plant A first:
 
 Plant B is optional and focused on soiling.
 
-## Normalization
+## Implemented Pipeline
+
+Implemented in `scripts/train_solar_twin.py` and `backend/solar_twin/`.
 
 Raw inverter output is not comparable because installed capacity and module configurations differ.
 
@@ -26,81 +28,62 @@ Core normalized target:
 P_norm_i,t = P_AC_i,t / PDC_i
 ```
 
-Efficiency proxy:
+Primary AC model features:
+
+```text
+irradiation
+sun altitude
+ambient temperature
+optional module temperature / temp_delta
+hour and day-of-year cyclic features
+inverter ID and inverter group
+installed capacity and module metadata
+```
+
+The primary AC model explicitly excludes `U_DC`, `I_DC_SUM`, `P_DC`, and `Eff`. DC signals are only used after an AC anomaly is detected to localize the likely fault side.
+
+DC diagnostic:
 
 ```text
 P_DC_i,t = U_DC_i,t * I_DC_SUM_i,t / 1000
 Eff_i,t = P_AC_i,t / P_DC_i,t
 ```
 
-Filter efficiency calculations to daylight and meaningful DC power:
+Curtailment is handled as a rule overlay: EVU/DV-active rows are labeled as curtailment and excluded from residual-based fault scoring.
 
-```text
-G_t > threshold
-Alt_t > threshold
-P_DC_i,t > threshold
-```
-
-## Features
-
-Per timestamp:
-- irradiation
-- sun altitude
-- ambient temperature
-- module temperature
-- temperature delta
-- EVU/DV curtailment
-- hour
-- day of year
-- month
-- year
-
-Per inverter:
-- inverter ID
-- inverter group
-- installed capacity
-- module type
-- manufacturer
-- module wattage
-- modules
-- strings
-- modules per string
-
-Optional labels/context:
-- error code
-- operational state
-- ticket active flag
-- ticket category
+Error codes are explanation-only fields in exported anomaly outputs; they are not model features.
 
 ## Training Strategy
 
 1. Reshape wide inverter columns into long format:
 
 ```text
-timestamp, inverter_id, P_AC, U_DC, I_DC_SUM, ...
+timestamp, inverter_id, P_AC, metadata, environment, optional DC diagnostics
 ```
 
 2. Join inverter metadata from system overview.
-3. Compute normalized target/features.
-4. Train on first year or early baseline.
-5. Predict expected normalized output on later years.
-6. Compute residuals:
+3. Compute normalized AC target/features.
+4. Vet 2017 baseline inverters against healthy peer cohorts.
+5. Train on 2017 and calibrate on 2018.
+6. Compare module-temperature model against exogenous-only ablation.
+7. Predict expected normalized output on later years.
+8. Compute residuals:
 
 ```text
 Residual_i,t = P_norm_actual_i,t - P_norm_pred_i,t
 ```
 
-7. Flag negative residuals as underperformance.
+9. Standardize residuals by irradiance/altitude sigma bins.
+10. Aggregate lost kWh by day/month and rank inverters by energy impact.
 
 ## Anomaly Types
 
 - outage: expected high, actual near zero
-- underperformance: actual persistently below expected
+- underperformance: actual persistently below expected in a multi-hour window
 - conversion issue: DC input normal, AC output low
 - DC-side issue: current/voltage abnormal under good irradiation
-- curtailment: EVU/DV active during output drop
+- curtailment: EVU/DV active, labeled directly rather than learned
 - thermal derating: high module temperature, lower output
 - group-level issue: several grouped inverters abnormal together
 - data issue: missing values, impossible values, flatlines
 - degradation: residual trend worsens over months/years
-

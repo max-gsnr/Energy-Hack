@@ -90,26 +90,39 @@ Residual_i,t = P_norm_actual_i,t - P_norm_pred_i,t
 
 ## ML Direction
 
-Recommended first target:
+Implemented first target:
 
 ```text
 y_i,t = P_AC_i,t / PDC_i
 ```
 
-Recommended features:
+Primary AC twin features:
 - irradiation
 - sun altitude
-- module temperature
 - ambient temperature
-- temperature delta
-- EVU/DV curtailment
-- hour/day/month/year features
+- optional module temperature / temperature delta, tested by ablation
+- hour/day-of-year cyclic features
 - inverter ID/group
 - installed capacity
 - module type/manufacturer
 - modules/strings/modules per string
 
-Train on the first year or early baseline. Evaluate by year over later history.
+Important implementation decisions:
+- Do not use `U_DC`, `I_DC_SUM`, `P_DC`, or efficiency as primary AC model features.
+- Use DC measurements only after an AC anomaly is detected to classify likely DC-side vs conversion-side issues.
+- Treat EVU/DV as a curtailment overlay, not learned model features.
+- Use error codes and operational state only as explanations, not training inputs.
+- Use year only for train/calibration/test split, not as a model feature.
+- Use z-scored residuals from daylight/non-curtailed sigma bins instead of flat residual thresholds.
+- Rank underperformers by aggregated lost kWh, not instantaneous residual.
+
+Train on 2017, calibrate on 2018, evaluate 2019-2025. Optionally compare a 2017-2018 training run, but avoid continuous fine-tuning because it can hide degradation/faults.
+
+Runnable command:
+
+```bash
+python scripts/train_solar_twin.py
+```
 
 ## Product Direction
 
@@ -134,3 +147,22 @@ The provider policy says the data is restricted to the hackathon and not public 
 - Initial organization commit pushed to `main`.
 - Raw downloaded data remains local and ignored.
 - Teammates should clone the repo, install dependencies, then run `bash scripts/import_data.sh`.
+
+## Implemented ML Pipeline
+
+Implemented `scripts/train_solar_twin.py` with backend modules under `backend/solar_twin/`.
+
+The pipeline:
+- builds a long-format Plant A dataset
+- trains a frozen AC baseline model on normalized output
+- keeps DC voltage/current out of AC model features
+- uses DC only for post-hoc diagnostics
+- vets 2017 baseline inverters against peer cohorts
+- compares module-temperature vs exogenous-only ablation
+- treats EVU/DV curtailment as a rule overlay
+- calibrates sigma-binned standardized residuals
+- exports daily/monthly lost-kWh rankings, anomaly events, top 5-minute samples, baseline vetting, sigma calibration, and model artifacts
+
+Smoke validation completed:
+- `python scripts/train_solar_twin.py --max-inverters 8 --max-rows-per-year 12000 --score-years 2019,2020`
+- `python scripts/train_solar_twin.py --max-rows-per-year 15000 --score-years 2019`

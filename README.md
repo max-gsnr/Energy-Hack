@@ -52,6 +52,39 @@ source .venv/bin/activate
 python scripts/inspect_data.py
 ```
 
+Run a quick ML smoke test:
+
+```bash
+source .venv/bin/activate
+python scripts/train_solar_twin.py \
+  --max-inverters 8 \
+  --max-rows-per-year 12000 \
+  --score-years 2019,2020 \
+  --output-dir outputs/smoke_twin \
+  --artifact-dir artifacts/smoke_twin
+```
+
+Run the Plant A frozen-baseline twin on all inverters:
+
+```bash
+source .venv/bin/activate
+python scripts/train_solar_twin.py \
+  --train-years 2017 \
+  --calibration-years 2018 \
+  --score-years 2019,2020,2021,2022,2023,2024,2025
+```
+
+Key exported outputs:
+
+- `outputs/solar_twin/inverter_rankings.csv`
+- `outputs/solar_twin/daily_inverter_scores.csv`
+- `outputs/solar_twin/monthly_inverter_scores.csv`
+- `outputs/solar_twin/plant_daily_scores.csv`
+- `outputs/solar_twin/anomaly_events.csv`
+- `outputs/solar_twin/top_anomaly_samples.csv`
+- `artifacts/solar_twin/ac_twin_model.joblib`
+- `artifacts/solar_twin/metrics.json`
+
 ## Repo Map
 
 - [MEMORY.md](MEMORY.md): running project memory and decisions.
@@ -59,4 +92,4 @@ python scripts/inspect_data.py
 - [docs/data_dictionary.md](docs/data_dictionary.md): important data fields and derived metrics.
 - [scripts/import_data.sh](scripts/import_data.sh): reproducible data import.
 - [scripts/inspect_data.py](scripts/inspect_data.py): quick data sanity check.
-
+- [scripts/train_solar_twin.py](scripts/train_solar_twin.py): frozen-baseline ML pipeline.

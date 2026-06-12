@@ -86,3 +86,19 @@ Lost_kWh = Lost_kW * timestep_hours
 Lost_EUR = Lost_kWh * feed_in_tariff
 ```
 
+## Model Outputs
+
+```text
+P_pred_norm = expected normalized AC output
+Residual = P_norm - P_pred_norm
+Residual_z = standardized residual using daylight sigma bins
+Lost_kW = max(0, P_pred_norm * PDC - P_AC)
+Lost_kWh = Lost_kW * timestep_hours
+Mild anomaly = Residual_z <= -2
+Strong anomaly = Residual_z <= -3
+Sustained underperformance = multi-hour strong anomaly window
+DC diagnostic = post-hoc fault-side localization using U_DC/I_DC_SUM/Eff
+Fault explained by error = anomaly overlaps non-zero error code
+```
+
+Exported CSVs live under `outputs/solar_twin/` after running `scripts/train_solar_twin.py`.
