@@ -25,11 +25,15 @@ def _deterministic_body(finding: Finding, rec: Recipient) -> str:
     label = adapter.display_label(finding.inverter_id)
     euro = finding.euro
     repair = finding.repair
-    eur_line = (
-        f"~EUR {euro.eur:,.0f} (assumed tariff {euro.tariff_eur_per_kwh} EUR/kWh - placeholder until confirmed)"
-        if euro
-        else "unavailable"
-    )
+    if euro:
+        tariff_note = (
+            f"assumed tariff {euro.tariff_eur_per_kwh} EUR/kWh"
+            if euro.is_assumption
+            else f"provider feed-in tariff {euro.tariff_eur_per_kwh} EUR/kWh"
+        )
+        eur_line = f"~EUR {euro.eur:,.0f} ({tariff_note})"
+    else:
+        eur_line = "unavailable"
     lines = [
         f"Dear {_first_name(rec.name)},",
         "",
@@ -69,7 +73,7 @@ def _deterministic_body(finding: Finding, rec: Recipient) -> str:
 _LLM_SYSTEM = (
     "You draft a concise, professional O&M email (English) from an automated solar digital-twin agent "
     "to a named Enerparc colleague. Use ONLY the provided JSON facts; never invent numbers. Always state "
-    "that EUR is an assumed-tariff estimate, and that repair-vs-replace has no cost data and is qualitative. "
+    "whether EUR uses provider tariff data or an assumed fallback, and that repair-vs-replace has no cost data and is qualitative. "
     "Keep it under ~180 words, with a clear recommended action and a short rationale for why this person was "
     "contacted. Sign as the SolarTwin O&M Agent. Return only the email body (no subject line)."
 )
@@ -106,6 +110,7 @@ def draft_email(finding: Finding, use_llm: bool = True) -> EmailDraft:
             "total_lost_kwh": finding.total_lost_kwh,
             "eur_estimate": finding.euro.eur if finding.euro else None,
             "tariff_eur_per_kwh": finding.euro.tariff_eur_per_kwh if finding.euro else None,
+            "tariff_is_assumption": finding.euro.is_assumption if finding.euro else None,
             "latest_factor": finding.latest_factor,
             "repair_verdict": finding.repair.verdict if finding.repair else None,
             "repair_rationale": finding.repair.rationale if finding.repair else None,

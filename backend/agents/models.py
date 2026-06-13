@@ -24,6 +24,9 @@ class InverterRanking(BaseModel):
     rank: int = 0
     pdc_kwp: float | None = None
     total_lost_kwh: float = 0.0
+    total_lost_eur: float | None = None
+    total_curtailment_eur: float | None = None
+    average_tariff_eur_per_kwh: float | None = None
     lost_kwh_per_kwp: float | None = None
     latest_factor: float | None = None
     latest_relative_factor: float | None = None

@@ -80,13 +80,15 @@ def health() -> dict:
 @app.get("/api/plant")
 def plant(plant: str = "A") -> dict:
     pid = plant.upper()
+    summary = adapter.plant_summary(pid)
     return {
         "plant_id": pid,
-        "summary": adapter.plant_summary(pid),
+        "summary": summary,
         "metadata": adapter.model_metadata(pid),
         "context": adapter.agent_context(pid),
-        "tariff_eur_per_kwh": config.TARIFF_EUR_PER_KWH,
-        "tariff_is_assumption": config.TARIFF_IS_ASSUMPTION,
+        "tariff_eur_per_kwh": summary.get("average_tariff_eur_per_kwh", config.TARIFF_EUR_PER_KWH),
+        "tariff_is_assumption": summary.get("tariff_is_assumption", config.TARIFF_IS_ASSUMPTION),
+        "tariff_source": summary.get("tariff_source", "fallback"),
     }
 
 
@@ -103,6 +105,7 @@ def contact_list() -> list:
 @app.get("/api/findings")
 def findings(plant: str = "A", refresh: bool = False, include_normal: bool = False) -> dict:
     items = get_findings(plant_id=plant, refresh=refresh)
+    summary = adapter.plant_summary(plant.upper())
     # An "anomaly" is a flagged inverter. Inverters tracking the expected
     # degradation envelope (severity "normal") are NOT anomalies and are excluded
     # by default so the count/list match the map. Pass include_normal=true for all.
@@ -110,8 +113,8 @@ def findings(plant: str = "A", refresh: bool = False, include_normal: bool = Fal
         items = [f for f in items if f.severity != "normal"]
     return {
         "plant_id": plant.upper(),
-        "tariff_eur_per_kwh": config.TARIFF_EUR_PER_KWH,
-        "tariff_is_assumption": config.TARIFF_IS_ASSUMPTION,
+        "tariff_eur_per_kwh": summary.get("average_tariff_eur_per_kwh", config.TARIFF_EUR_PER_KWH),
+        "tariff_is_assumption": summary.get("tariff_is_assumption", config.TARIFF_IS_ASSUMPTION),
         "total": len(items),
         "findings": [f.model_dump() for f in items],
     }

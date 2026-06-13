@@ -1,6 +1,6 @@
 """Central configuration for the agent layer.
 
-Single source of truth for paths, the (assumed) feed-in tariff, and LLM settings.
+Single source of truth for paths, feed-in tariff fallback values, and LLM settings.
 Everything degrades gracefully when no API key is set.
 """
 
@@ -28,9 +28,9 @@ OUTPUT_DIR = Path(os.getenv("AGENT_OUTPUT_DIR", str(ROOT / "outputs/agents")))
 EMAIL_DIR = OUTPUT_DIR / "emails"
 TIMELINE_DIR = OUTPUT_DIR / "timelines"
 
-# --- Financial assumption (NO real tariff file imported) -------------------
-# Every EUR figure is lost_kwh * TARIFF_EUR_PER_KWH and is tagged as an assumption.
-# Replace once the model exports a real `lost_eur` from feed-in-tarrifs.xlsx.
+# --- Financial fallback -----------------------------------------------------
+# Exported payloads may include provider feed-in-tariff EUR values. This fallback
+# is used only when a payload lacks real tariff-derived EUR fields.
 TARIFF_EUR_PER_KWH = float(os.getenv("TARIFF_EUR_PER_KWH", "0.10"))
 TARIFF_IS_ASSUMPTION = os.getenv("TARIFF_EUR_PER_KWH") is None
 CURRENCY = "EUR"

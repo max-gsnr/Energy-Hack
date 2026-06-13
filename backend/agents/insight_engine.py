@@ -1,7 +1,7 @@
 """Insight Engine / Root-Cause analyzer (always runs after the model).
 
 For every inverter it produces one actionable Finding: severity, classification,
-root-cause, recommended action, priority, lost kWh, assumed-tariff EUR, and a
+root-cause, recommended action, priority, lost kWh, tariff-backed EUR, and a
 qualitative repair-vs-replace verdict. Deterministic core; optional Gemini polish
 for the top findings only.
 
@@ -90,12 +90,13 @@ def _recommended_action(classification: Classification, r: InverterRanking) -> s
     return actions[classification]
 
 
-def _headline(classification: Classification, r: InverterRanking, eur: float) -> str:
+def _headline(classification: Classification, r: InverterRanking, eur: float, tariff_is_assumption: bool) -> str:
     label = adapter.display_label(r.inverter_id)
     pretty = classification.replace("_", " ")
+    tariff_note = "assumed tariff" if tariff_is_assumption else "provider tariff"
     return (
         f"{label}: {pretty} - {r.total_lost_kwh:,.0f} kWh modeled loss "
-        f"(~EUR {eur:,.0f} at assumed tariff), health factor "
+        f"(~EUR {eur:,.0f} at {tariff_note}), health factor "
         f"{r.latest_factor if r.latest_factor is not None else 'n/a'}."
     )
 
@@ -148,7 +149,12 @@ def build_findings(llm_top_n: int = 8, plant_id: str = "A") -> list[Finding]:
     findings: list[Finding] = []
     for r in rows:
         classification = classify(r)
-        euro = tools_mod.euro_estimate(r.total_lost_kwh)
+        euro = tools_mod.euro_estimate(
+            r.total_lost_kwh,
+            eur=r.total_lost_eur,
+            tariff_eur_per_kwh=r.average_tariff_eur_per_kwh,
+            is_assumption=False if r.total_lost_eur is not None else None,
+        )
         repair = repair_assessment(r, classification)
         finding = Finding(
             finding_id=f"F-{adapter.safe_inverter_id(r.inverter_id)}",
@@ -158,7 +164,7 @@ def build_findings(llm_top_n: int = 8, plant_id: str = "A") -> list[Finding]:
             severity=r.primary_status,
             severity_color=r.status_color,
             classification=classification,
-            headline=_headline(classification, r, euro.eur),
+            headline=_headline(classification, r, euro.eur, euro.is_assumption),
             root_cause=_deterministic_root_cause(classification, r),
             recommended_action=_recommended_action(classification, r),
             total_lost_kwh=round(r.total_lost_kwh, 2),
@@ -170,6 +176,8 @@ def build_findings(llm_top_n: int = 8, plant_id: str = "A") -> list[Finding]:
             repair=repair,
             evidence={
                 "total_lost_kwh": r.total_lost_kwh,
+                "total_lost_eur": r.total_lost_eur,
+                "average_tariff_eur_per_kwh": r.average_tariff_eur_per_kwh,
                 "lost_kwh_per_kwp": r.lost_kwh_per_kwp,
                 "latest_factor": r.latest_factor,
                 "latest_relative_factor": r.latest_relative_factor,
@@ -213,10 +221,16 @@ def actionable(findings: list[Finding]) -> list[Finding]:
 
 def write_findings(findings: list[Finding]) -> dict[str, Any]:
     config.OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    real_tariffs = [f.euro for f in findings if f.euro and not f.euro.is_assumption]
+    tariff = (
+        sum(e.tariff_eur_per_kwh for e in real_tariffs) / len(real_tariffs)
+        if real_tariffs
+        else config.TARIFF_EUR_PER_KWH
+    )
     payload = {
         "plant": config.PLANT_NAME,
-        "tariff_eur_per_kwh": config.TARIFF_EUR_PER_KWH,
-        "tariff_is_assumption": config.TARIFF_IS_ASSUMPTION,
+        "tariff_eur_per_kwh": round(tariff, 6),
+        "tariff_is_assumption": not bool(real_tariffs),
         "total_findings": len(findings),
         "actionable_findings": len(actionable(findings)),
         "findings": [f.model_dump() for f in findings],

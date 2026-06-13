@@ -26,7 +26,7 @@ def _system_prompt() -> str:
         f"Model: {ctx.get('model_summary', '')}\n\n"
         "Guardrails:\n"
         f"{guardrails}\n"
-        "- EUR figures are estimates from an assumed feed-in tariff; always say so.\n"
+        "- EUR figures come from provider tariff exports when tariff_is_assumption=false; otherwise say they are assumed estimates.\n"
         "- Repair-vs-replace has no cost data; keep it qualitative.\n"
         "Be concise and concrete. Cite inverter ids and numbers from tools."
     )

@@ -26,7 +26,26 @@
     "years_since_baseline": 7
   },
   "event_semantics": "events.json contains acute outages and acute faults only; chronic degradation is exported in degradation_trends.json.",
+  "explanation_sources": {
+    "error_description_file_used": false,
+    "plant_location_used": true,
+    "tickets_file_used": false
+  },
+  "financials": {
+    "average_tariff_eur_per_kwh": 0.100465,
+    "semantics": "lost_kwh multiplied by provider feed-in tariff where available; excludes curtailment",
+    "tariff_is_assumption": false,
+    "tariff_source": "provider_feed_in_tariff_file"
+  },
   "generated_at": "2026-06-13T08:18:45+00:00",
+  "location": {
+    "description": "53.269000°, 12.121000°\n\n(Close to Silmersdorf, Germany)",
+    "kmz_available": true,
+    "latitude": 53.269,
+    "longitude": 12.121,
+    "source": "/Users/maxgsnr/Desktop/Energy Hack/Data/Plant_B/Additional_Data/Coordinate.txt"
+  },
+  "plant": "B",
   "rolling_layer_enabled": true,
   "rows_used": 25674733,
   "score_years": [
@@ -48,6 +67,33 @@
       "critical_high": 499.7749,
       "warning_med": 440.5163,
       "watch_low": 357.896
+    }
+  },
+  "source_documents": {
+    "coordinates_kmz": {
+      "available": true,
+      "path": "/Users/maxgsnr/Desktop/Energy Hack/Data/Plant_B/Additional_Data/Coordinate(google earth).kmz",
+      "used_for": "available map source file; not expanded into inverter geometry"
+    },
+    "coordinates_txt": {
+      "available": true,
+      "path": "/Users/maxgsnr/Desktop/Energy Hack/Data/Plant_B/Additional_Data/Coordinate.txt",
+      "used_for": "plant latitude/longitude metadata"
+    },
+    "data_use_policy": {
+      "available": true,
+      "path": "/Users/maxgsnr/Desktop/Energy Hack/Data/Shared/Data_Use_Policy.txt",
+      "used_for": "provider data-use provenance metadata"
+    },
+    "general_info": {
+      "available": true,
+      "path": "/Users/maxgsnr/Desktop/Energy Hack/Data/Plant_B/General_information_plant_B.pdf",
+      "used_for": "source reference document exposed in provenance metadata"
+    },
+    "tariff": {
+      "available": true,
+      "path": "/Users/maxgsnr/Desktop/Energy Hack/Data/Plant_B/Additional_Data/feed-in-tarrifs plant b.xlsx",
+      "used_for": "real EUR/kWh conversion for lost/curtailed/expected/actual energy"
     }
   },
   "source_run_dir": "outputs/plant_b_run",

@@ -5,6 +5,7 @@ import argparse
 import json
 import math
 import re
+import warnings
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -21,6 +22,7 @@ REQUIRED_COLUMNS = {
         "expected_kwh",
         "actual_kwh",
         "lost_kwh",
+        "curtailment_kwh",
         "strong_samples",
         "outage_samples",
         "slow_degradation_samples",
@@ -128,6 +130,25 @@ REQUIRED_COLUMNS = {
     },
 }
 
+ROOT = Path(__file__).resolve().parents[1]
+DATA_ROOT = ROOT / "Data"
+PLANT_SIDE_FILES = {
+    "A": {
+        "tariff": DATA_ROOT / "Plant_A/Additional_Data/feed-in-tarrifs.xlsx",
+        "tickets": DATA_ROOT / "Plant_A/Additional_Data/Tickets.xlsx",
+        "error_descriptions": DATA_ROOT / "Plant_A/Errorcodes/errorcodes description (important).xlsx",
+        "general_info": DATA_ROOT / "Plant_A/General_information_plant_A.pdf",
+        "legend": DATA_ROOT / "Plant_A/Main-monitoring-data/main_monitoring_data_legend.xlsb",
+    },
+    "B": {
+        "tariff": DATA_ROOT / "Plant_B/Additional_Data/feed-in-tarrifs plant b.xlsx",
+        "coordinates_txt": DATA_ROOT / "Plant_B/Additional_Data/Coordinate.txt",
+        "coordinates_kmz": DATA_ROOT / "Plant_B/Additional_Data/Coordinate(google earth).kmz",
+        "general_info": DATA_ROOT / "Plant_B/General_information_plant_B.pdf",
+    },
+}
+DATA_USE_POLICY = DATA_ROOT / "Shared/Data_Use_Policy.txt"
+
 
 # Legacy absolute factor thresholds. Retained ONLY for event severity / backward
 # compatibility in exported metadata. Per-inverter map status no longer uses these
@@ -189,6 +210,17 @@ class ExportData:
     degradation_trends: pd.DataFrame
     rolling: pd.DataFrame
     metadata: pd.DataFrame
+    top_samples: pd.DataFrame
+
+
+@dataclass(frozen=True)
+class SideData:
+    plant_id: str
+    tariff_long: pd.DataFrame
+    tickets: pd.DataFrame
+    error_descriptions: dict[int, str]
+    location: dict[str, Any] | None
+    source_documents: dict[str, Any]
 
 
 def safe_inverter_id(inverter_id: str) -> str:
@@ -239,6 +271,13 @@ def read_csv(input_dir: Path, name: str) -> pd.DataFrame:
     return frame
 
 
+def read_optional_csv(input_dir: Path, name: str) -> pd.DataFrame:
+    path = input_dir / name
+    if not path.exists():
+        return pd.DataFrame()
+    return pd.read_csv(path)
+
+
 def load_inputs(input_dir: Path) -> ExportData:
     run_summary = read_json(input_dir / "run_summary.json")
     for key in [
@@ -260,6 +299,315 @@ def load_inputs(input_dir: Path) -> ExportData:
         degradation_trends=read_csv(input_dir, "degradation_trends.csv"),
         rolling=read_csv(input_dir, "rolling_factor_history.csv"),
         metadata=read_csv(input_dir, "inverter_metadata.csv"),
+        top_samples=read_optional_csv(input_dir, "top_anomaly_samples.csv"),
+    )
+
+
+def _plant_id_from_run(run_summary: dict[str, Any], output_dir: Path | None = None) -> str:
+    plant = str(run_summary.get("plant") or "").upper()
+    if plant in {"A", "B"}:
+        return plant
+    if output_dir and "plant_b" in str(output_dir).lower():
+        return "B"
+    return "A"
+
+
+def _source_documents(plant_id: str) -> dict[str, Any]:
+    files = PLANT_SIDE_FILES.get(plant_id, {})
+    docs = {
+        name: {
+            "path": str(path),
+            "available": path.exists(),
+            "used_for": {
+                "tariff": "real EUR/kWh conversion for lost/curtailed/expected/actual energy",
+                "tickets": "ticket-window overlap labels for event explanation",
+                "error_descriptions": "raw inverter error code to readable fault text",
+                "coordinates_txt": "plant latitude/longitude metadata",
+                "coordinates_kmz": "available map source file; not expanded into inverter geometry",
+                "general_info": "source reference document exposed in provenance metadata",
+                "legend": "source legend document exposed in provenance metadata",
+            }.get(name, "source/provenance metadata"),
+        }
+        for name, path in files.items()
+    }
+    docs["data_use_policy"] = {
+        "path": str(DATA_USE_POLICY),
+        "available": DATA_USE_POLICY.exists(),
+        "used_for": "provider data-use provenance metadata",
+    }
+    return docs
+
+
+def load_tariffs(plant_id: str) -> pd.DataFrame:
+    path = PLANT_SIDE_FILES.get(plant_id, {}).get("tariff")
+    if path is None or not path.exists():
+        return pd.DataFrame(
+            columns=["inverter_id", "effective_date", "tariff_eur_per_kwh", "tariff_source"]
+        )
+    raw = pd.read_excel(path, sheet_name=0, header=None)
+    date_row = None
+    best_count = 0
+    for idx in range(min(len(raw), 8)):
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", UserWarning)
+            parsed = pd.to_datetime(raw.iloc[idx, 1:], errors="coerce")
+        count = int(parsed.notna().sum())
+        if count > best_count:
+            best_count = count
+            date_row = idx
+    if date_row is None or best_count == 0:
+        return pd.DataFrame(
+            columns=["inverter_id", "effective_date", "tariff_eur_per_kwh", "tariff_source"]
+        )
+
+    dates = pd.to_datetime(raw.iloc[date_row, 1:], errors="coerce")
+    values = raw.iloc[date_row + 1 :, : len(dates) + 1].copy()
+    values.columns = ["inverter_id", *dates.tolist()]
+    values = values[values["inverter_id"].astype(str).str.startswith("INV ", na=False)]
+    long = values.melt(
+        id_vars=["inverter_id"], var_name="effective_date", value_name="tariff_raw"
+    )
+    long["effective_date"] = pd.to_datetime(long["effective_date"], errors="coerce")
+    long["tariff_raw"] = pd.to_numeric(long["tariff_raw"], errors="coerce")
+    long = long.dropna(subset=["inverter_id", "effective_date", "tariff_raw"]).copy()
+    # The provider sheets are in euro cents/kWh (e.g. 11.5 = 0.115 EUR/kWh).
+    long["tariff_eur_per_kwh"] = np.where(
+        long["tariff_raw"].abs() > 1.0, long["tariff_raw"] / 100.0, long["tariff_raw"]
+    )
+    long["tariff_source"] = str(path)
+    return long[["inverter_id", "effective_date", "tariff_eur_per_kwh", "tariff_source"]].sort_values(
+        ["inverter_id", "effective_date"]
+    )
+
+
+def apply_tariffs(frame: pd.DataFrame, tariffs: pd.DataFrame) -> pd.DataFrame:
+    out = frame.copy()
+    out["date_dt"] = pd.to_datetime(out["date"], errors="coerce")
+    out["tariff_eur_per_kwh"] = np.nan
+    out["tariff_effective_date"] = None
+    out["tariff_source"] = None
+    if tariffs.empty or out.empty:
+        return out.drop(columns=["date_dt"])
+
+    grouped_tariffs = {
+        inv: group.sort_values("effective_date")
+        for inv, group in tariffs.groupby("inverter_id", sort=False)
+    }
+    for inv, idx in out.groupby("inverter_id", sort=False).groups.items():
+        t = grouped_tariffs.get(inv)
+        if t is None or t.empty:
+            continue
+        dates = t["effective_date"].to_numpy(dtype="datetime64[ns]")
+        rates = t["tariff_eur_per_kwh"].to_numpy(dtype=float)
+        eff_dates = t["effective_date"].dt.strftime("%Y-%m-%d").to_numpy(dtype=object)
+        row_dates = out.loc[idx, "date_dt"].to_numpy(dtype="datetime64[ns]")
+        pos = np.searchsorted(dates, row_dates, side="right") - 1
+        valid = pos >= 0
+        target_idx = out.loc[idx].index[valid]
+        out.loc[target_idx, "tariff_eur_per_kwh"] = rates[pos[valid]]
+        out.loc[target_idx, "tariff_effective_date"] = eff_dates[pos[valid]]
+        out.loc[target_idx, "tariff_source"] = str(t["tariff_source"].iloc[0])
+
+    for energy_col, eur_col in [
+        ("lost_kwh", "lost_eur"),
+        ("curtailment_kwh", "curtailment_eur"),
+        ("expected_kwh", "expected_eur"),
+        ("current_expected_kwh", "current_expected_eur"),
+        ("actual_kwh", "actual_eur"),
+    ]:
+        if energy_col in out.columns:
+            out[eur_col] = out[energy_col].astype(float) * out["tariff_eur_per_kwh"]
+    return out.drop(columns=["date_dt"])
+
+
+def _combine_date_time(date_value: Any, time_value: Any) -> pd.Timestamp | pd.NaT:
+    date = pd.to_datetime(date_value, errors="coerce")
+    if pd.isna(date):
+        return pd.NaT
+    if pd.isna(time_value):
+        return date
+    text = str(time_value)
+    time = pd.to_datetime(text, errors="coerce")
+    if pd.isna(time):
+        return date
+    return pd.Timestamp.combine(date.date(), time.time())
+
+
+def load_tickets(plant_id: str) -> pd.DataFrame:
+    path = PLANT_SIDE_FILES.get(plant_id, {}).get("tickets")
+    if path is None or not path.exists():
+        return pd.DataFrame(columns=["ticket_id", "start", "end", "component", "category"])
+    rows: list[dict[str, Any]] = []
+    # 2020-2026 normalized sheet.
+    try:
+        modern = pd.read_excel(path, sheet_name="2020-2026")
+        for idx, row in modern.iterrows():
+            start = pd.to_datetime(row.get("startdate"), errors="coerce", utc=True)
+            end = pd.to_datetime(row.get("enddate"), errors="coerce", utc=True)
+            if pd.isna(start):
+                continue
+            if pd.isna(end):
+                end = start + pd.Timedelta(days=1)
+            rows.append(
+                {
+                    "ticket_id": f"ticket-2020-{idx + 1}",
+                    "start": start.tz_convert(None),
+                    "end": end.tz_convert(None),
+                    "component": str(row.get("component") or "unknown"),
+                    "category": str(row.get("category") or "unknown"),
+                }
+            )
+    except Exception:
+        pass
+
+    # 2019-2020 legacy German sheet.
+    try:
+        legacy = pd.read_excel(path, sheet_name="2019-2020")
+        for idx, row in legacy.iterrows():
+            start = _combine_date_time(row.get("Start Date"), row.get("Uhrzeit Beginn"))
+            end = _combine_date_time(row.get("Datum Ende"), row.get("Uhrzeit Ende"))
+            if pd.isna(start):
+                continue
+            if pd.isna(end) or end < start:
+                end = start + pd.Timedelta(days=1)
+            rows.append(
+                {
+                    "ticket_id": f"ticket-2019-{idx + 1}",
+                    "start": start,
+                    "end": end,
+                    "component": str(row.get("Komponente") or "unknown"),
+                    "category": str(row.get("Störungsart/ Beanstandung") or "unknown"),
+                }
+            )
+    except Exception:
+        pass
+    return pd.DataFrame(rows)
+
+
+def _ticket_scope(component: Any, inverter_id: str) -> str | None:
+    text = str(component or "").strip()
+    if not text or text.lower() in {"nan", "unknown"}:
+        return "plant_wide"
+
+    inverter_match = re.search(r"INV\s+\d{2}\.\d{2}\.\d{3}", text)
+    if inverter_match:
+        return "specific_inverter" if inverter_match.group(0) == inverter_id else None
+
+    normalized = text.casefold()
+    if any(
+        term in normalized
+        for term in [
+            "plant",
+            "gesamte anlage",
+            "trafostation",
+            "netz",
+            "curtailment",
+            "ms-wartung",
+            "schnee",
+        ]
+    ):
+        return "plant_wide"
+    if "wechselrichter" in normalized:
+        return "component_type_only"
+    return "component_type_only"
+
+
+def ticket_overlaps(date_value: Any, inverter_id: str, tickets: pd.DataFrame) -> list[dict[str, Any]]:
+    if tickets.empty:
+        return []
+    day = pd.to_datetime(date_value, errors="coerce")
+    if pd.isna(day):
+        return []
+    start = day.normalize()
+    end = start + pd.Timedelta(days=1)
+    overlap = tickets[(tickets["start"] < end) & (tickets["end"] >= start)].copy()
+    out = []
+    for _, row in overlap.iterrows():
+        match_scope = _ticket_scope(row["component"], inverter_id)
+        if match_scope is None:
+            continue
+        out.append(
+            {
+                "ticket_id": row["ticket_id"],
+                "category": row["category"],
+                "component": row["component"],
+                "match_scope": match_scope,
+                "start": row["start"].strftime("%Y-%m-%d %H:%M:%S"),
+                "end": row["end"].strftime("%Y-%m-%d %H:%M:%S"),
+            }
+        )
+    return out
+
+
+def load_error_descriptions(plant_id: str) -> dict[int, str]:
+    path = PLANT_SIDE_FILES.get(plant_id, {}).get("error_descriptions")
+    if path is None or not path.exists():
+        return {}
+    raw = pd.read_excel(path, sheet_name=0)
+    code_col = "Dezimal" if "Dezimal" in raw.columns else raw.columns[2]
+    text_col = "Code" if "Code" in raw.columns else raw.columns[-1]
+    codes = pd.to_numeric(raw[code_col], errors="coerce")
+    descriptions: dict[int, str] = {}
+    for code, text in zip(codes, raw[text_col]):
+        if pd.notna(code) and pd.notna(text):
+            descriptions[int(code)] = str(text)
+    return descriptions
+
+
+def top_sample_error_lookup(top_samples: pd.DataFrame, descriptions: dict[int, str]) -> dict[tuple[str, str], dict[str, Any]]:
+    if top_samples.empty or "error_code" not in top_samples.columns:
+        return {}
+    frame = top_samples.copy()
+    frame["date"] = pd.to_datetime(frame["timestamp"], errors="coerce").dt.strftime("%Y-%m-%d")
+    frame["error_code_int"] = pd.to_numeric(frame["error_code"], errors="coerce").fillna(0).astype(int)
+    if "operational_state" in frame.columns:
+        frame["operational_state_int"] = pd.to_numeric(frame["operational_state"], errors="coerce")
+    else:
+        frame["operational_state_int"] = np.nan
+    frame = frame[frame["error_code_int"] != 0]
+    lookup: dict[tuple[str, str], dict[str, Any]] = {}
+    for (date, inv), group in frame.groupby(["date", "inverter_id"], sort=False):
+        codes = sorted(int(c) for c in group["error_code_int"].dropna().unique() if int(c) != 0)
+        states = sorted(
+            int(s) for s in group["operational_state_int"].dropna().unique()
+        )
+        lookup[(date, inv)] = {
+            "error_codes": codes,
+            "error_descriptions": [
+                {"code": code, "description": descriptions.get(code, "unknown")}
+                for code in codes
+            ],
+            "operational_states": states,
+        }
+    return lookup
+
+
+def load_location(plant_id: str) -> dict[str, Any] | None:
+    path = PLANT_SIDE_FILES.get(plant_id, {}).get("coordinates_txt")
+    if path is None or not path.exists():
+        return None
+    text = path.read_text(encoding="utf-8", errors="replace")
+    nums = re.findall(r"[-+]?\d+(?:\.\d+)?", text)
+    if len(nums) < 2:
+        return {"source": str(path), "raw": text.strip()}
+    kmz_path = PLANT_SIDE_FILES.get(plant_id, {}).get("coordinates_kmz")
+    return {
+        "latitude": float(nums[0]),
+        "longitude": float(nums[1]),
+        "source": str(path),
+        "description": text.strip(),
+        "kmz_available": bool(kmz_path and kmz_path.exists()),
+    }
+
+
+def load_side_data(plant_id: str) -> SideData:
+    return SideData(
+        plant_id=plant_id,
+        tariff_long=load_tariffs(plant_id),
+        tickets=load_tickets(plant_id),
+        error_descriptions=load_error_descriptions(plant_id),
+        location=load_location(plant_id),
+        source_documents=_source_documents(plant_id),
     )
 
 
@@ -378,8 +726,9 @@ def primary_reason(
     return "Tracking the expected normal-aging envelope; no structural outlier signal."
 
 
-def build_plant_summary(plant_daily: pd.DataFrame) -> dict[str, Any]:
+def build_plant_summary(plant_daily: pd.DataFrame, daily: pd.DataFrame, side: SideData) -> dict[str, Any]:
     plant = plant_daily.copy()
+    daily_finance = daily.copy()
     yearly = (
         plant.groupby("year", sort=True)
         .agg(
@@ -396,6 +745,18 @@ def build_plant_summary(plant_daily: pd.DataFrame) -> dict[str, Any]:
         )
         .reset_index()
     )
+    yearly_eur = pd.DataFrame()
+    if "lost_eur" in daily_finance.columns:
+        agg = {
+            "lost_eur": ("lost_eur", "sum"),
+            "curtailment_eur": ("curtailment_eur", "sum"),
+            "expected_eur": ("expected_eur", "sum"),
+            "actual_eur": ("actual_eur", "sum"),
+            "tariff_eur_per_kwh": ("tariff_eur_per_kwh", "mean"),
+        }
+        yearly_eur = daily_finance.groupby("year", sort=True).agg(**agg).reset_index()
+        yearly = yearly.merge(yearly_eur, on="year", how="left")
+
     yearly_rows = []
     for _, row in yearly.iterrows():
         # Curtailment is now measured directly during throttled periods. The
@@ -415,6 +776,13 @@ def build_plant_summary(plant_daily: pd.DataFrame) -> dict[str, Any]:
                 "lost_kwh": finite_or_none(row["lost_kwh"], 2),
                 "curtailment_kwh": finite_or_none(curtailment, 2),
                 "overperformance_offset_kwh": finite_or_none(overperformance, 2),
+                "lost_eur": finite_or_none(row.get("lost_eur"), 2),
+                "curtailment_eur": finite_or_none(row.get("curtailment_eur"), 2),
+                "expected_eur": finite_or_none(row.get("expected_eur"), 2),
+                "actual_eur": finite_or_none(row.get("actual_eur"), 2),
+                "average_tariff_eur_per_kwh": finite_or_none(
+                    row.get("tariff_eur_per_kwh"), 6
+                ),
                 "strong_samples": int(row["strong_samples"]),
                 "outage_samples": int(row["outage_samples"]),
                 "slow_degradation_samples": int(row["slow_degradation_samples"]),
@@ -430,13 +798,42 @@ def build_plant_summary(plant_daily: pd.DataFrame) -> dict[str, Any]:
     total_overperformance = max(
         0.0, total_lost + total_curtailment - (total_expected - total_actual)
     )
+    total_lost_eur = (
+        float(daily_finance["lost_eur"].sum()) if "lost_eur" in daily_finance.columns else math.nan
+    )
+    total_curtailment_eur = (
+        float(daily_finance["curtailment_eur"].sum())
+        if "curtailment_eur" in daily_finance.columns
+        else math.nan
+    )
+    total_expected_eur = (
+        float(daily_finance["expected_eur"].sum())
+        if "expected_eur" in daily_finance.columns
+        else math.nan
+    )
+    total_actual_eur = (
+        float(daily_finance["actual_eur"].sum()) if "actual_eur" in daily_finance.columns else math.nan
+    )
+    avg_tariff = (
+        float(daily_finance["tariff_eur_per_kwh"].mean())
+        if "tariff_eur_per_kwh" in daily_finance.columns
+        else math.nan
+    )
     return {
         "total_expected_kwh": finite_or_none(total_expected, 2),
         "total_actual_kwh": finite_or_none(total_actual, 2),
         "total_lost_kwh": finite_or_none(total_lost, 2),
         "total_curtailment_kwh": finite_or_none(total_curtailment, 2),
         "total_overperformance_offset_kwh": finite_or_none(total_overperformance, 2),
+        "total_lost_eur": finite_or_none(total_lost_eur, 2),
+        "total_curtailment_eur": finite_or_none(total_curtailment_eur, 2),
+        "total_expected_eur": finite_or_none(total_expected_eur, 2),
+        "total_actual_eur": finite_or_none(total_actual_eur, 2),
+        "average_tariff_eur_per_kwh": finite_or_none(avg_tariff, 6),
+        "tariff_source": "provider_feed_in_tariff_file" if not side.tariff_long.empty else "unavailable",
+        "tariff_is_assumption": bool(side.tariff_long.empty),
         "lost_kwh_semantics": "performance loss excluding curtailment",
+        "lost_eur_semantics": "lost_kwh multiplied by provider feed-in tariff where available; excludes curtailment",
         "reconciliation": "actual_kwh + lost_kwh + curtailment_kwh - overperformance_offset_kwh = expected_kwh",
         "sample_count_semantics": {
             "strong_samples": "5-minute acute residual flags.",
@@ -444,6 +841,8 @@ def build_plant_summary(plant_daily: pd.DataFrame) -> dict[str, Any]:
             "slow_degradation_samples": "5-minute chronic trend-state rows, not independent events.",
             "fast_degradation_samples": "5-minute chronic trend-state rows, not independent events.",
         },
+        "location": side.location,
+        "source_documents": side.source_documents,
         "yearly": yearly_rows,
     }
 
@@ -551,13 +950,28 @@ def enrich_rankings(
     rankings: pd.DataFrame,
     metadata: pd.DataFrame,
     factors: pd.DataFrame,
+    daily: pd.DataFrame,
     baseline_excluded: set[str],
     thresholds: dict[str, Any],
     years_since_baseline: float,
 ) -> list[dict[str, Any]]:
+    finance_cols = ["lost_eur", "curtailment_eur", "tariff_eur_per_kwh"]
+    if all(col in daily.columns for col in finance_cols):
+        finance = (
+            daily.groupby("inverter_id", sort=False)
+            .agg(
+                total_lost_eur=("lost_eur", "sum"),
+                total_curtailment_eur=("curtailment_eur", "sum"),
+                average_tariff_eur_per_kwh=("tariff_eur_per_kwh", "mean"),
+            )
+            .reset_index()
+        )
+    else:
+        finance = pd.DataFrame(columns=["inverter_id", "total_lost_eur", "total_curtailment_eur", "average_tariff_eur_per_kwh"])
     merged = (
         rankings.merge(metadata, on="inverter_id", how="left")
         .merge(factors, on="inverter_id", how="left")
+        .merge(finance, on="inverter_id", how="left")
         .sort_values("total_lost_kwh", ascending=False)
         .reset_index(drop=True)
     )
@@ -577,6 +991,11 @@ def enrich_rankings(
                 "inverter_group": row.get("inverter_group") or "unknown",
                 "pdc_kwp": pdc_kwp,
                 "total_lost_kwh": finite_or_none(lost, 2),
+                "total_lost_eur": finite_or_none(row.get("total_lost_eur"), 2),
+                "total_curtailment_eur": finite_or_none(row.get("total_curtailment_eur"), 2),
+                "average_tariff_eur_per_kwh": finite_or_none(
+                    row.get("average_tariff_eur_per_kwh"), 6
+                ),
                 "lost_kwh_per_kwp": finite_or_none(lost_per_kwp, 4),
                 "latest_factor": factor,
                 "latest_relative_factor": relative_factor,
@@ -625,6 +1044,8 @@ def build_inverter_map(rankings: list[dict[str, Any]]) -> list[dict[str, Any]]:
                     "status_basis": item.get("status_basis", "degradation_envelope"),
                     "baseline_excluded": item["baseline_excluded"],
                     "total_lost_kwh": item["total_lost_kwh"],
+                    "total_lost_eur": item.get("total_lost_eur"),
+                    "average_tariff_eur_per_kwh": item.get("average_tariff_eur_per_kwh"),
                     "lost_kwh_per_kwp": item["lost_kwh_per_kwp"],
                     "latest_factor": item["latest_factor"],
                     "latest_relative_factor": item["latest_relative_factor"],
@@ -636,7 +1057,13 @@ def build_inverter_map(rankings: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return sorted(tiles, key=lambda x: (x["row"], x["column"], x["inverter_id"]))
 
 
-def build_events(events: pd.DataFrame, metadata: pd.DataFrame, thresholds: dict[str, Any]) -> list[dict[str, Any]]:
+def build_events(
+    events: pd.DataFrame,
+    metadata: pd.DataFrame,
+    thresholds: dict[str, Any],
+    side: SideData,
+    error_lookup: dict[tuple[str, str], dict[str, Any]],
+) -> list[dict[str, Any]]:
     acute = events[events["event_type"].isin(["outage", "acute_fault"])].copy()
     merged = acute.merge(metadata[["inverter_id", "pdc_kwp"]], on="inverter_id", how="left")
     rows = []
@@ -645,6 +1072,9 @@ def build_events(events: pd.DataFrame, metadata: pd.DataFrame, thresholds: dict[
         lost = finite_or_none(row["lost_kwh"], 4)
         lost_per_kwp = None if not pdc_kwp else float(lost) / float(pdc_kwp)
         severity = event_severity(str(row["event_type"]), lost_per_kwp, thresholds)
+        key = (str(row["date"]), row["inverter_id"])
+        error_info = error_lookup.get(key, {"error_codes": [], "error_descriptions": [], "operational_states": []})
+        tickets = ticket_overlaps(row["date"], row["inverter_id"], side.tickets)
         rows.append(
             {
                 "date": str(row["date"]),
@@ -658,6 +1088,11 @@ def build_events(events: pd.DataFrame, metadata: pd.DataFrame, thresholds: dict[
                 "current_expected_kwh": finite_or_none(row["current_expected_kwh"], 2),
                 "actual_kwh": finite_or_none(row["actual_kwh"], 2),
                 "lost_kwh": finite_or_none(lost, 2),
+                "curtailment_kwh": finite_or_none(row.get("curtailment_kwh"), 2),
+                "lost_eur": finite_or_none(row.get("lost_eur"), 2),
+                "curtailment_eur": finite_or_none(row.get("curtailment_eur"), 2),
+                "tariff_eur_per_kwh": finite_or_none(row.get("tariff_eur_per_kwh"), 6),
+                "tariff_effective_date": finite_or_none(row.get("tariff_effective_date")),
                 "event_lost_kwh_per_kwp": finite_or_none(lost_per_kwp, 4),
                 "mean_residual_z": finite_or_none(row["mean_residual_z"], 2),
                 "min_residual_z": finite_or_none(row["min_residual_z"], 2),
@@ -669,6 +1104,20 @@ def build_events(events: pd.DataFrame, metadata: pd.DataFrame, thresholds: dict[
                 "error_samples": int(row["error_samples"]),
                 "explained_fault_samples": int(row["explained_fault_samples"]),
                 "explained_by_error": int(row["error_samples"]) > 0,
+                "error_codes": error_info["error_codes"],
+                "error_descriptions": error_info["error_descriptions"],
+                "operational_states": error_info["operational_states"],
+                "ticket_overlap": bool(tickets),
+                "tickets": tickets,
+                "explanation_sources": {
+                    "error_description_file_used": bool(side.error_descriptions),
+                    "tickets_file_used": not side.tickets.empty,
+                    "ticket_match_note": (
+                        "specific_inverter tickets are direct matches; plant_wide and "
+                        "component_type_only tickets are context only"
+                    ),
+                    "tariff_file_used": not side.tariff_long.empty,
+                },
             }
         )
     return rows
@@ -757,6 +1206,7 @@ def build_agent_context(
     events: list[dict[str, Any]],
     degradation_trends: dict[str, Any],
     baseline_excluded: list[str],
+    plant_id: str,
 ) -> dict[str, Any]:
     total_lost = plant_summary["total_lost_kwh"]
     total_curtailment = plant_summary["total_curtailment_kwh"]
@@ -784,6 +1234,8 @@ def build_agent_context(
                 "finding": finding,
                 "evidence": {
                     "total_lost_kwh": item["total_lost_kwh"],
+                    "total_lost_eur": item.get("total_lost_eur"),
+                    "average_tariff_eur_per_kwh": item.get("average_tariff_eur_per_kwh"),
                     "lost_kwh_per_kwp": item["lost_kwh_per_kwp"],
                     "latest_factor": item["latest_factor"],
                     "latest_relative_factor": item["latest_relative_factor"],
@@ -797,9 +1249,17 @@ def build_agent_context(
         )
     return {
         "plant_headline": (
-            f"Plant A has {total_lost} kWh modeled performance loss excluding curtailment; "
+            f"Plant {plant_id} has {total_lost} kWh modeled performance loss excluding curtailment; "
             f"estimated curtailment bucket is {total_curtailment} kWh."
         ),
+        "financial_summary": {
+            "total_lost_eur": plant_summary.get("total_lost_eur"),
+            "total_curtailment_eur": plant_summary.get("total_curtailment_eur"),
+            "average_tariff_eur_per_kwh": plant_summary.get("average_tariff_eur_per_kwh"),
+            "tariff_is_assumption": plant_summary.get("tariff_is_assumption"),
+            "tariff_source": plant_summary.get("tariff_source"),
+            "semantics": plant_summary.get("lost_eur_semantics"),
+        },
         "plant_health": plant_health,
         "model_summary": (
             f"Selected model is {run_summary['selected_model']}, trained on "
@@ -816,16 +1276,21 @@ def build_agent_context(
             "Per-inverter map status = how far an inverter sits BELOW the expected normal-aging "
             "envelope (~0.5%/yr); it is not an absolute pass/fail threshold. Whole-fleet decline is "
             "reported separately in plant_health (Layer 1) and must not be hidden by per-tile status.",
+            "EUR values come from provider feed-in tariff files when tariff_is_assumption is false.",
+            "Ticket and error-description explanations are exported as evidence; if absent, say unknown.",
         ],
         "top_findings": top_findings,
         "top_events": events[:10],
         "degradation_trend_summary": degradation_trends["yearly"],
+        "source_documents": plant_summary.get("source_documents", {}),
         "answerable_questions": [
             "Which inverter has the highest modeled performance loss?",
             "Is the top issue pre-existing or a new acute fault?",
             "How much energy was lost excluding curtailment?",
             "How large is the estimated curtailment bucket?",
             "Does an anomaly overlap with error samples?",
+            "Which anomalies overlap service tickets or readable error-code descriptions?",
+            "What is the EUR value of modeled performance loss using the provider tariff?",
         ],
     }
 
@@ -860,6 +1325,11 @@ def build_detail_files(
                     "current_expected_kwh": finite_or_none(row["current_expected_kwh"], 2),
                     "actual_kwh": finite_or_none(row["actual_kwh"], 2),
                     "lost_kwh": finite_or_none(row["lost_kwh"], 2),
+                    "curtailment_kwh": finite_or_none(row.get("curtailment_kwh"), 2),
+                    "lost_eur": finite_or_none(row.get("lost_eur"), 2),
+                    "curtailment_eur": finite_or_none(row.get("curtailment_eur"), 2),
+                    "tariff_eur_per_kwh": finite_or_none(row.get("tariff_eur_per_kwh"), 6),
+                    "tariff_effective_date": finite_or_none(row.get("tariff_effective_date")),
                     "mean_residual_z": finite_or_none(row["mean_residual_z"], 2),
                     "mean_acute_residual_z": finite_or_none(row["mean_acute_residual_z"], 2),
                     "mean_factor": finite_or_none(row["mean_factor"], 4),
@@ -998,10 +1468,15 @@ def validate_outputs(
 
 def export_payloads(input_dir: Path, output_dir: Path) -> None:
     data = load_inputs(input_dir)
+    plant_id = _plant_id_from_run(data.run_summary, output_dir)
+    side = load_side_data(plant_id)
+    daily = apply_tariffs(data.daily, side.tariff_long)
+    events_frame = apply_tariffs(data.events, side.tariff_long)
+    error_lookup = top_sample_error_lookup(data.top_samples, side.error_descriptions)
     baseline_excluded = set(data.run_summary["baseline_excluded_inverters"])
     factors = canonical_factors(data.rolling)
     thresholds = severity_thresholds(data.rankings, data.metadata)
-    plant_summary = build_plant_summary(data.plant_daily)
+    plant_summary = build_plant_summary(data.plant_daily, daily, side)
 
     train_years = data.run_summary.get("train_years") or [2017]
     score_years = data.run_summary.get("score_years") or [int(r["year"]) for r in plant_summary["yearly"]]
@@ -1010,10 +1485,10 @@ def export_payloads(input_dir: Path, output_dir: Path) -> None:
     years_since_baseline = max(0, latest_year - baseline_year)
 
     rankings = enrich_rankings(
-        data.rankings, data.metadata, factors, baseline_excluded, thresholds, years_since_baseline
+        data.rankings, data.metadata, factors, daily, baseline_excluded, thresholds, years_since_baseline
     )
     inverter_map = build_inverter_map(rankings)
-    events = build_events(data.events, data.metadata, thresholds)
+    events = build_events(events_frame, data.metadata, thresholds, side, error_lookup)
     degradation_trends = build_degradation_trends(data.degradation_trends)
     plant_summary["plant_health"] = build_plant_health(
         rankings, degradation_trends["yearly"], baseline_year, latest_year
@@ -1027,6 +1502,7 @@ def export_payloads(input_dir: Path, output_dir: Path) -> None:
     )
     metadata = {
         "generated_at": generated_at_from_source(input_dir),
+        "plant": plant_id,
         "source_run_dir": str(input_dir),
         "selected_model": selected_model,
         "train_years": data.run_summary.get("train_years", []),
@@ -1055,6 +1531,19 @@ def export_payloads(input_dir: Path, output_dir: Path) -> None:
             ),
         },
         "event_semantics": "events.json contains acute outages and acute faults only; chronic degradation is exported in degradation_trends.json.",
+        "financials": {
+            "tariff_source": plant_summary.get("tariff_source"),
+            "tariff_is_assumption": plant_summary.get("tariff_is_assumption"),
+            "average_tariff_eur_per_kwh": plant_summary.get("average_tariff_eur_per_kwh"),
+            "semantics": plant_summary.get("lost_eur_semantics"),
+        },
+        "explanation_sources": {
+            "tickets_file_used": not side.tickets.empty,
+            "error_description_file_used": bool(side.error_descriptions),
+            "plant_location_used": side.location is not None,
+        },
+        "location": side.location,
+        "source_documents": side.source_documents,
     }
     agent_context = build_agent_context(
         data.run_summary,
@@ -1063,6 +1552,7 @@ def export_payloads(input_dir: Path, output_dir: Path) -> None:
         events,
         degradation_trends,
         sorted(baseline_excluded),
+        plant_id,
     )
 
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -1074,7 +1564,7 @@ def export_payloads(input_dir: Path, output_dir: Path) -> None:
     write_json(output_dir / "events.json", events)
     write_json(output_dir / "degradation_trends.json", degradation_trends)
     write_json(output_dir / "agent_context.json", agent_context)
-    build_detail_files(output_dir, rankings, data.daily, data.rolling, events)
+    build_detail_files(output_dir, rankings, daily, data.rolling, events)
     validate_outputs(output_dir, plant_summary, rankings, inverter_map, agent_context)
 
 

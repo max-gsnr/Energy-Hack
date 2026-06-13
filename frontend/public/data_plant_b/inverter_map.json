@@ -1,5 +1,6 @@
 [
   {
+    "average_tariff_eur_per_kwh": 0.100462,
     "baseline_excluded": false,
     "column": 1,
     "display_label": "03.01.045",
@@ -15,9 +16,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 3828.68,
     "total_lost_kwh": 40146.9
   },
   {
+    "average_tariff_eur_per_kwh": 0.100462,
     "baseline_excluded": false,
     "column": 2,
     "display_label": "04.01.075",
@@ -33,9 +36,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 3173.41,
     "total_lost_kwh": 32638.54
   },
   {
+    "average_tariff_eur_per_kwh": 0.10042,
     "baseline_excluded": false,
     "column": 3,
     "display_label": "01.01.002",
@@ -51,9 +56,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 2993.59,
     "total_lost_kwh": 29189.21
   },
   {
+    "average_tariff_eur_per_kwh": 0.100462,
     "baseline_excluded": false,
     "column": 4,
     "display_label": "04.01.074",
@@ -69,9 +76,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 2206.44,
     "total_lost_kwh": 22617.65
   },
   {
+    "average_tariff_eur_per_kwh": 0.10042,
     "baseline_excluded": false,
     "column": 5,
     "display_label": "01.01.001",
@@ -87,9 +96,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 2263.63,
     "total_lost_kwh": 22403.71
   },
   {
+    "average_tariff_eur_per_kwh": 0.100462,
     "baseline_excluded": false,
     "column": 6,
     "display_label": "05.01.093",
@@ -105,9 +116,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 1965.83,
     "total_lost_kwh": 19902.72
   },
   {
+    "average_tariff_eur_per_kwh": 0.100462,
     "baseline_excluded": false,
     "column": 7,
     "display_label": "03.01.044",
@@ -123,9 +136,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 2000.6,
     "total_lost_kwh": 19219.39
   },
   {
+    "average_tariff_eur_per_kwh": 0.100692,
     "baseline_excluded": false,
     "column": 8,
     "display_label": "05.01.092",
@@ -141,9 +156,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 1391.35,
     "total_lost_kwh": 13780.18
   },
   {
+    "average_tariff_eur_per_kwh": 0.100462,
     "baseline_excluded": false,
     "column": 9,
     "display_label": "02.01.030",
@@ -159,9 +176,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 1017.55,
     "total_lost_kwh": 11150.84
   },
   {
+    "average_tariff_eur_per_kwh": 0.100462,
     "baseline_excluded": true,
     "column": 10,
     "display_label": "02.01.029",
@@ -177,9 +196,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 680.98,
     "total_lost_kwh": 7681.96
   },
   {
+    "average_tariff_eur_per_kwh": 0.100462,
     "baseline_excluded": false,
     "column": 1,
     "display_label": "03.02.047",
@@ -195,9 +216,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 3604.62,
     "total_lost_kwh": 36012.17
   },
   {
+    "average_tariff_eur_per_kwh": 0.100462,
     "baseline_excluded": false,
     "column": 2,
     "display_label": "02.02.032",
@@ -213,9 +236,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 3552.56,
     "total_lost_kwh": 35706.16
   },
   {
+    "average_tariff_eur_per_kwh": 0.100462,
     "baseline_excluded": false,
     "column": 3,
     "display_label": "05.02.095",
@@ -231,9 +256,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 3059.67,
     "total_lost_kwh": 30843.61
   },
   {
+    "average_tariff_eur_per_kwh": 0.100462,
     "baseline_excluded": false,
     "column": 4,
     "display_label": "04.02.077",
@@ -249,9 +276,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 3059.44,
     "total_lost_kwh": 30610.07
   },
   {
+    "average_tariff_eur_per_kwh": 0.10042,
     "baseline_excluded": false,
     "column": 5,
     "display_label": "01.02.004",
@@ -267,9 +296,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 2624.09,
     "total_lost_kwh": 26023.07
   },
   {
+    "average_tariff_eur_per_kwh": 0.100462,
     "baseline_excluded": false,
     "column": 6,
     "display_label": "02.02.031",
@@ -285,9 +316,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 2453.61,
     "total_lost_kwh": 24815.08
   },
   {
+    "average_tariff_eur_per_kwh": 0.10042,
     "baseline_excluded": false,
     "column": 7,
     "display_label": "01.02.003",
@@ -303,9 +336,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 1941.97,
     "total_lost_kwh": 19439.88
   },
   {
+    "average_tariff_eur_per_kwh": 0.100462,
     "baseline_excluded": false,
     "column": 8,
     "display_label": "05.02.094",
@@ -321,9 +356,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 1845.76,
     "total_lost_kwh": 18250.22
   },
   {
+    "average_tariff_eur_per_kwh": 0.100462,
     "baseline_excluded": false,
     "column": 9,
     "display_label": "03.02.046",
@@ -339,9 +376,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 1822.88,
     "total_lost_kwh": 17601.03
   },
   {
+    "average_tariff_eur_per_kwh": 0.100462,
     "baseline_excluded": false,
     "column": 10,
     "display_label": "04.02.076",
@@ -357,9 +396,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 1625.59,
     "total_lost_kwh": 16147.24
   },
   {
+    "average_tariff_eur_per_kwh": 0.100462,
     "baseline_excluded": false,
     "column": 1,
     "display_label": "04.03.079",
@@ -375,9 +416,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 4067.27,
     "total_lost_kwh": 40996.71
   },
   {
+    "average_tariff_eur_per_kwh": 0.100462,
     "baseline_excluded": false,
     "column": 2,
     "display_label": "05.03.097",
@@ -393,9 +436,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 3500.28,
     "total_lost_kwh": 35133.01
   },
   {
+    "average_tariff_eur_per_kwh": 0.100462,
     "baseline_excluded": false,
     "column": 3,
     "display_label": "02.03.034",
@@ -411,9 +456,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 3440.71,
     "total_lost_kwh": 35050.77
   },
   {
+    "average_tariff_eur_per_kwh": 0.10042,
     "baseline_excluded": false,
     "column": 4,
     "display_label": "01.03.006",
@@ -429,9 +476,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 3015.18,
     "total_lost_kwh": 29878.56
   },
   {
+    "average_tariff_eur_per_kwh": 0.100462,
     "baseline_excluded": false,
     "column": 5,
     "display_label": "03.03.049",
@@ -447,9 +496,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 2706.91,
     "total_lost_kwh": 26727.55
   },
   {
+    "average_tariff_eur_per_kwh": 0.100462,
     "baseline_excluded": false,
     "column": 6,
     "display_label": "02.03.033",
@@ -465,9 +516,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 2234.88,
     "total_lost_kwh": 23103.34
   },
   {
+    "average_tariff_eur_per_kwh": 0.100462,
     "baseline_excluded": false,
     "column": 7,
     "display_label": "05.03.096",
@@ -483,9 +536,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 2013.22,
     "total_lost_kwh": 19499.32
   },
   {
+    "average_tariff_eur_per_kwh": 0.100462,
     "baseline_excluded": false,
     "column": 8,
     "display_label": "03.03.048",
@@ -501,9 +556,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 1854.26,
     "total_lost_kwh": 18003.3
   },
   {
+    "average_tariff_eur_per_kwh": 0.101494,
     "baseline_excluded": false,
     "column": 9,
     "display_label": "01.03.005",
@@ -519,9 +576,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 1808.6,
     "total_lost_kwh": 17982.64
   },
   {
+    "average_tariff_eur_per_kwh": 0.100462,
     "baseline_excluded": false,
     "column": 10,
     "display_label": "04.03.078",
@@ -537,9 +596,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 1469.03,
     "total_lost_kwh": 14573.91
   },
   {
+    "average_tariff_eur_per_kwh": 0.100462,
     "baseline_excluded": false,
     "column": 1,
     "display_label": "02.04.036",
@@ -555,9 +616,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 3716.27,
     "total_lost_kwh": 37735.55
   },
   {
+    "average_tariff_eur_per_kwh": 0.100462,
     "baseline_excluded": false,
     "column": 2,
     "display_label": "04.04.081",
@@ -573,9 +636,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 2994.59,
     "total_lost_kwh": 30478.28
   },
   {
+    "average_tariff_eur_per_kwh": 0.100462,
     "baseline_excluded": false,
     "column": 3,
     "display_label": "05.04.099",
@@ -591,9 +656,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 2918.18,
     "total_lost_kwh": 29245.37
   },
   {
+    "average_tariff_eur_per_kwh": 0.100462,
     "baseline_excluded": false,
     "column": 4,
     "display_label": "03.04.051",
@@ -609,9 +676,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 2949.62,
     "total_lost_kwh": 29192.53
   },
   {
+    "average_tariff_eur_per_kwh": 0.10042,
     "baseline_excluded": false,
     "column": 5,
     "display_label": "01.04.008",
@@ -627,9 +696,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 2631.54,
     "total_lost_kwh": 26455.67
   },
   {
+    "average_tariff_eur_per_kwh": 0.100462,
     "baseline_excluded": false,
     "column": 6,
     "display_label": "02.04.035",
@@ -645,9 +716,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 2219.97,
     "total_lost_kwh": 22952.73
   },
   {
+    "average_tariff_eur_per_kwh": 0.10042,
     "baseline_excluded": false,
     "column": 7,
     "display_label": "01.04.007",
@@ -663,9 +736,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 2078.18,
     "total_lost_kwh": 20685.62
   },
   {
+    "average_tariff_eur_per_kwh": 0.100462,
     "baseline_excluded": false,
     "column": 8,
     "display_label": "05.04.098",
@@ -681,9 +756,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 2006.8,
     "total_lost_kwh": 19793.98
   },
   {
+    "average_tariff_eur_per_kwh": 0.100462,
     "baseline_excluded": false,
     "column": 9,
     "display_label": "03.04.050",
@@ -699,9 +776,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 1865.9,
     "total_lost_kwh": 18016.26
   },
   {
+    "average_tariff_eur_per_kwh": 0.100462,
     "baseline_excluded": false,
     "column": 10,
     "display_label": "04.04.080",
@@ -717,9 +796,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 1629.98,
     "total_lost_kwh": 16140.09
   },
   {
+    "average_tariff_eur_per_kwh": 0.100462,
     "baseline_excluded": false,
     "column": 1,
     "display_label": "02.05.038",
@@ -735,9 +816,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 3566.72,
     "total_lost_kwh": 36415.24
   },
   {
+    "average_tariff_eur_per_kwh": 0.100462,
     "baseline_excluded": false,
     "column": 2,
     "display_label": "03.05.053",
@@ -753,9 +836,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 3214.16,
     "total_lost_kwh": 32958.17
   },
   {
+    "average_tariff_eur_per_kwh": 0.100462,
     "baseline_excluded": false,
     "column": 3,
     "display_label": "04.05.083",
@@ -771,9 +856,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 3264.42,
     "total_lost_kwh": 32853.62
   },
   {
+    "average_tariff_eur_per_kwh": 0.100462,
     "baseline_excluded": false,
     "column": 4,
     "display_label": "05.05.101",
@@ -789,9 +876,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 3234.04,
     "total_lost_kwh": 32487.38
   },
   {
+    "average_tariff_eur_per_kwh": 0.100462,
     "baseline_excluded": false,
     "column": 5,
     "display_label": "05.05.100",
@@ -807,9 +896,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 2819.35,
     "total_lost_kwh": 30062.31
   },
   {
+    "average_tariff_eur_per_kwh": 0.10042,
     "baseline_excluded": false,
     "column": 6,
     "display_label": "01.05.010",
@@ -825,9 +916,11 @@
     "status": "watch",
     "status_basis": "degradation_envelope",
     "status_color": "yellow",
+    "total_lost_eur": 3118.62,
     "total_lost_kwh": 29792.02
   },
   {
+    "average_tariff_eur_per_kwh": 0.10042,
     "baseline_excluded": false,
     "column": 7,
     "display_label": "01.05.009",
@@ -843,9 +936,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 2545.6,
     "total_lost_kwh": 26882.1
   },
   {
+    "average_tariff_eur_per_kwh": 0.100462,
     "baseline_excluded": false,
     "column": 8,
     "display_label": "02.05.037",
@@ -861,9 +956,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 2482.36,
     "total_lost_kwh": 25435.04
   },
   {
+    "average_tariff_eur_per_kwh": 0.100462,
     "baseline_excluded": false,
     "column": 9,
     "display_label": "03.05.052",
@@ -879,9 +976,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 1819.53,
     "total_lost_kwh": 17593.46
   },
   {
+    "average_tariff_eur_per_kwh": 0.100462,
     "baseline_excluded": false,
     "column": 10,
     "display_label": "04.05.082",
@@ -897,9 +996,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 1537.95,
     "total_lost_kwh": 15266.05
   },
   {
+    "average_tariff_eur_per_kwh": 0.10042,
     "baseline_excluded": true,
     "column": 1,
     "display_label": "01.06.012",
@@ -915,9 +1016,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 6681.86,
     "total_lost_kwh": 68698.19
   },
   {
+    "average_tariff_eur_per_kwh": 0.100462,
     "baseline_excluded": false,
     "column": 2,
     "display_label": "05.06.103",
@@ -933,9 +1036,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 3292.79,
     "total_lost_kwh": 32835.71
   },
   {
+    "average_tariff_eur_per_kwh": 0.100462,
     "baseline_excluded": false,
     "column": 3,
     "display_label": "03.06.055",
@@ -951,9 +1056,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 3255.52,
     "total_lost_kwh": 32414.33
   },
   {
+    "average_tariff_eur_per_kwh": 0.100462,
     "baseline_excluded": false,
     "column": 4,
     "display_label": "04.06.085",
@@ -969,9 +1076,11 @@
     "status": "watch",
     "status_basis": "degradation_envelope",
     "status_color": "yellow",
+    "total_lost_eur": 2853.95,
     "total_lost_kwh": 28706.74
   },
   {
+    "average_tariff_eur_per_kwh": 0.10069,
     "baseline_excluded": false,
     "column": 5,
     "display_label": "01.06.011",
@@ -987,9 +1096,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 2488.74,
     "total_lost_kwh": 26808.09
   },
   {
+    "average_tariff_eur_per_kwh": 0.100462,
     "baseline_excluded": false,
     "column": 6,
     "display_label": "02.06.039",
@@ -1005,9 +1116,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 2572.65,
     "total_lost_kwh": 26072.59
   },
   {
+    "average_tariff_eur_per_kwh": 0.100462,
     "baseline_excluded": false,
     "column": 7,
     "display_label": "05.06.102",
@@ -1023,9 +1136,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 2223.42,
     "total_lost_kwh": 21599.02
   },
   {
+    "average_tariff_eur_per_kwh": 0.100462,
     "baseline_excluded": false,
     "column": 8,
     "display_label": "04.06.084",
@@ -1041,9 +1156,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 1793.09,
     "total_lost_kwh": 17509.61
   },
   {
+    "average_tariff_eur_per_kwh": 0.100462,
     "baseline_excluded": false,
     "column": 9,
     "display_label": "03.06.054",
@@ -1059,9 +1176,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 1657.8,
     "total_lost_kwh": 16482.98
   },
   {
+    "average_tariff_eur_per_kwh": 0.100462,
     "baseline_excluded": true,
     "column": 1,
     "display_label": "02.07.041",
@@ -1077,9 +1196,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 6697.32,
     "total_lost_kwh": 68712.68
   },
   {
+    "average_tariff_eur_per_kwh": 0.100462,
     "baseline_excluded": false,
     "column": 2,
     "display_label": "03.07.057",
@@ -1095,9 +1216,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 3616.94,
     "total_lost_kwh": 36216.52
   },
   {
+    "average_tariff_eur_per_kwh": 0.100462,
     "baseline_excluded": false,
     "column": 3,
     "display_label": "04.07.087",
@@ -1113,9 +1236,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 2877.19,
     "total_lost_kwh": 29123.08
   },
   {
+    "average_tariff_eur_per_kwh": 0.10042,
     "baseline_excluded": false,
     "column": 4,
     "display_label": "01.07.014",
@@ -1131,9 +1256,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 2885.92,
     "total_lost_kwh": 28140.76
   },
   {
+    "average_tariff_eur_per_kwh": 0.100462,
     "baseline_excluded": false,
     "column": 5,
     "display_label": "05.07.105",
@@ -1149,9 +1276,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 2772.83,
     "total_lost_kwh": 27936.29
   },
   {
+    "average_tariff_eur_per_kwh": 0.100462,
     "baseline_excluded": false,
     "column": 6,
     "display_label": "02.07.040",
@@ -1167,9 +1296,11 @@
     "status": "watch",
     "status_basis": "degradation_envelope",
     "status_color": "yellow",
+    "total_lost_eur": 2522.8,
     "total_lost_kwh": 25978.87
   },
   {
+    "average_tariff_eur_per_kwh": 0.100462,
     "baseline_excluded": false,
     "column": 7,
     "display_label": "05.07.104",
@@ -1185,9 +1316,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 1979.42,
     "total_lost_kwh": 20056.34
   },
   {
+    "average_tariff_eur_per_kwh": 0.10042,
     "baseline_excluded": false,
     "column": 8,
     "display_label": "01.07.013",
@@ -1203,9 +1336,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 1948.47,
     "total_lost_kwh": 19263.21
   },
   {
+    "average_tariff_eur_per_kwh": 0.100462,
     "baseline_excluded": false,
     "column": 9,
     "display_label": "03.07.056",
@@ -1221,9 +1356,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 1926.9,
     "total_lost_kwh": 18386.33
   },
   {
+    "average_tariff_eur_per_kwh": 0.100462,
     "baseline_excluded": false,
     "column": 10,
     "display_label": "04.07.086",
@@ -1239,9 +1376,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 1778.5,
     "total_lost_kwh": 17558.36
   },
   {
+    "average_tariff_eur_per_kwh": 0.100462,
     "baseline_excluded": true,
     "column": 1,
     "display_label": "04.08.089",
@@ -1257,9 +1396,11 @@
     "status": "watch",
     "status_basis": "degradation_envelope",
     "status_color": "yellow",
+    "total_lost_eur": 8185.95,
     "total_lost_kwh": 84028.96
   },
   {
+    "average_tariff_eur_per_kwh": 0.100462,
     "baseline_excluded": false,
     "column": 2,
     "display_label": "02.08.043",
@@ -1275,9 +1416,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 3673.04,
     "total_lost_kwh": 37829.44
   },
   {
+    "average_tariff_eur_per_kwh": 0.100462,
     "baseline_excluded": false,
     "column": 3,
     "display_label": "03.08.059",
@@ -1293,9 +1436,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 3616.78,
     "total_lost_kwh": 36150.63
   },
   {
+    "average_tariff_eur_per_kwh": 0.100462,
     "baseline_excluded": false,
     "column": 4,
     "display_label": "02.08.042",
@@ -1311,9 +1456,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 3052.82,
     "total_lost_kwh": 31689.9
   },
   {
+    "average_tariff_eur_per_kwh": 0.10042,
     "baseline_excluded": false,
     "column": 5,
     "display_label": "01.08.016",
@@ -1329,9 +1476,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 2752.23,
     "total_lost_kwh": 27861.47
   },
   {
+    "average_tariff_eur_per_kwh": 0.100462,
     "baseline_excluded": false,
     "column": 6,
     "display_label": "05.08.107",
@@ -1347,9 +1496,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 2616.61,
     "total_lost_kwh": 26111.68
   },
   {
+    "average_tariff_eur_per_kwh": 0.100462,
     "baseline_excluded": false,
     "column": 7,
     "display_label": "05.08.106",
@@ -1365,9 +1516,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 2264.96,
     "total_lost_kwh": 22548.77
   },
   {
+    "average_tariff_eur_per_kwh": 0.10042,
     "baseline_excluded": false,
     "column": 8,
     "display_label": "01.08.015",
@@ -1383,9 +1536,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 1887.3,
     "total_lost_kwh": 19073.35
   },
   {
+    "average_tariff_eur_per_kwh": 0.100462,
     "baseline_excluded": false,
     "column": 9,
     "display_label": "04.08.088",
@@ -1401,9 +1556,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 1881.9,
     "total_lost_kwh": 18672.41
   },
   {
+    "average_tariff_eur_per_kwh": 0.100462,
     "baseline_excluded": false,
     "column": 10,
     "display_label": "03.08.058",
@@ -1419,9 +1576,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 1392.14,
     "total_lost_kwh": 13592.24
   },
   {
+    "average_tariff_eur_per_kwh": 0.10042,
     "baseline_excluded": false,
     "column": 1,
     "display_label": "01.09.018",
@@ -1437,9 +1596,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 3350.99,
     "total_lost_kwh": 33614.46
   },
   {
+    "average_tariff_eur_per_kwh": 0.100462,
     "baseline_excluded": false,
     "column": 2,
     "display_label": "03.09.061",
@@ -1455,9 +1616,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 3198.33,
     "total_lost_kwh": 31915.81
   },
   {
+    "average_tariff_eur_per_kwh": 0.100462,
     "baseline_excluded": false,
     "column": 3,
     "display_label": "04.09.091",
@@ -1473,9 +1636,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 2854.89,
     "total_lost_kwh": 28640.18
   },
   {
+    "average_tariff_eur_per_kwh": 0.100462,
     "baseline_excluded": false,
     "column": 4,
     "display_label": "04.09.090",
@@ -1491,9 +1656,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 2006.8,
     "total_lost_kwh": 19929.36
   },
   {
+    "average_tariff_eur_per_kwh": 0.10042,
     "baseline_excluded": false,
     "column": 5,
     "display_label": "01.09.017",
@@ -1509,9 +1676,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 1956.27,
     "total_lost_kwh": 19415.59
   },
   {
+    "average_tariff_eur_per_kwh": 0.100462,
     "baseline_excluded": false,
     "column": 6,
     "display_label": "03.09.060",
@@ -1527,9 +1696,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 1437.95,
     "total_lost_kwh": 13965.7
   },
   {
+    "average_tariff_eur_per_kwh": 0.100462,
     "baseline_excluded": false,
     "column": 1,
     "display_label": "03.10.063",
@@ -1545,9 +1716,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 4577.06,
     "total_lost_kwh": 45945.35
   },
   {
+    "average_tariff_eur_per_kwh": 0.10042,
     "baseline_excluded": false,
     "column": 2,
     "display_label": "01.10.020",
@@ -1563,9 +1736,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 3399.75,
     "total_lost_kwh": 35858.59
   },
   {
+    "average_tariff_eur_per_kwh": 0.10042,
     "baseline_excluded": false,
     "column": 3,
     "display_label": "01.10.019",
@@ -1581,9 +1756,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 1730.3,
     "total_lost_kwh": 17362.15
   },
   {
+    "average_tariff_eur_per_kwh": 0.100462,
     "baseline_excluded": false,
     "column": 4,
     "display_label": "03.10.062",
@@ -1599,9 +1776,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 1547.46,
     "total_lost_kwh": 14911.03
   },
   {
+    "average_tariff_eur_per_kwh": 0.10042,
     "baseline_excluded": false,
     "column": 1,
     "display_label": "01.11.022",
@@ -1617,9 +1796,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 3450.88,
     "total_lost_kwh": 34421.99
   },
   {
+    "average_tariff_eur_per_kwh": 0.100462,
     "baseline_excluded": false,
     "column": 2,
     "display_label": "03.11.065",
@@ -1635,9 +1816,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 2813.64,
     "total_lost_kwh": 27858.87
   },
   {
+    "average_tariff_eur_per_kwh": 0.10042,
     "baseline_excluded": false,
     "column": 3,
     "display_label": "01.11.021",
@@ -1653,9 +1836,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 1991.14,
     "total_lost_kwh": 19925.01
   },
   {
+    "average_tariff_eur_per_kwh": 0.100462,
     "baseline_excluded": false,
     "column": 4,
     "display_label": "03.11.064",
@@ -1671,9 +1856,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 1608.28,
     "total_lost_kwh": 15468.99
   },
   {
+    "average_tariff_eur_per_kwh": 0.100462,
     "baseline_excluded": true,
     "column": 1,
     "display_label": "03.12.067",
@@ -1689,9 +1876,11 @@
     "status": "watch",
     "status_basis": "degradation_envelope",
     "status_color": "yellow",
+    "total_lost_eur": 7655.33,
     "total_lost_kwh": 77919.33
   },
   {
+    "average_tariff_eur_per_kwh": 0.10042,
     "baseline_excluded": false,
     "column": 2,
     "display_label": "01.12.024",
@@ -1707,9 +1896,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 2911.49,
     "total_lost_kwh": 29452.71
   },
   {
+    "average_tariff_eur_per_kwh": 0.100462,
     "baseline_excluded": false,
     "column": 3,
     "display_label": "03.12.066",
@@ -1725,9 +1916,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 1980.77,
     "total_lost_kwh": 20716.41
   },
   {
+    "average_tariff_eur_per_kwh": 0.10042,
     "baseline_excluded": false,
     "column": 4,
     "display_label": "01.12.023",
@@ -1743,9 +1936,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 1737.06,
     "total_lost_kwh": 17467.8
   },
   {
+    "average_tariff_eur_per_kwh": 0.100462,
     "baseline_excluded": false,
     "column": 1,
     "display_label": "03.13.069",
@@ -1761,9 +1956,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 4222.9,
     "total_lost_kwh": 40474.12
   },
   {
+    "average_tariff_eur_per_kwh": 0.10042,
     "baseline_excluded": false,
     "column": 2,
     "display_label": "01.13.026",
@@ -1779,9 +1976,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 3190.84,
     "total_lost_kwh": 31820.16
   },
   {
+    "average_tariff_eur_per_kwh": 0.100462,
     "baseline_excluded": false,
     "column": 3,
     "display_label": "03.13.068",
@@ -1797,9 +1996,11 @@
     "status": "watch",
     "status_basis": "degradation_envelope",
     "status_color": "yellow",
+    "total_lost_eur": 1898.04,
     "total_lost_kwh": 18295.54
   },
   {
+    "average_tariff_eur_per_kwh": 0.10042,
     "baseline_excluded": false,
     "column": 4,
     "display_label": "01.13.025",
@@ -1815,9 +2016,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 1639.59,
     "total_lost_kwh": 16333.8
   },
   {
+    "average_tariff_eur_per_kwh": 0.10042,
     "baseline_excluded": true,
     "column": 1,
     "display_label": "01.14.028",
@@ -1833,9 +2036,11 @@
     "status": "watch",
     "status_basis": "degradation_envelope",
     "status_color": "yellow",
+    "total_lost_eur": 6502.5,
     "total_lost_kwh": 66707.68
   },
   {
+    "average_tariff_eur_per_kwh": 0.100462,
     "baseline_excluded": false,
     "column": 2,
     "display_label": "03.14.071",
@@ -1851,9 +2056,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 3296.42,
     "total_lost_kwh": 32652.88
   },
   {
+    "average_tariff_eur_per_kwh": 0.10042,
     "baseline_excluded": false,
     "column": 3,
     "display_label": "01.14.027",
@@ -1869,9 +2076,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 1782.18,
     "total_lost_kwh": 17798.79
   },
   {
+    "average_tariff_eur_per_kwh": 0.100462,
     "baseline_excluded": false,
     "column": 4,
     "display_label": "03.14.070",
@@ -1887,9 +2096,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 1661.71,
     "total_lost_kwh": 16242.51
   },
   {
+    "average_tariff_eur_per_kwh": 0.100462,
     "baseline_excluded": false,
     "column": 1,
     "display_label": "03.15.073",
@@ -1905,9 +2116,11 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 3595.33,
     "total_lost_kwh": 35956.43
   },
   {
+    "average_tariff_eur_per_kwh": 0.100462,
     "baseline_excluded": false,
     "column": 2,
     "display_label": "03.15.072",
@@ -1923,6 +2136,7 @@
     "status": "normal",
     "status_basis": "degradation_envelope",
     "status_color": "green",
+    "total_lost_eur": 1812.23,
     "total_lost_kwh": 17571.43
   }
 ]

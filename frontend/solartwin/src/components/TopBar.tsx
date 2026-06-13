@@ -24,7 +24,7 @@ function KpiCard({ label, value, sub, className }: { label: string; value: strin
 export default function TopBar({ plant, health }: { plant: PlantData | null; health: HealthData | null }) {
   const s = plant?.summary;
   const tariff = plant?.tariff_eur_per_kwh ?? 0.1;
-  const eur = s ? Math.round(s.total_lost_kwh * tariff) : null;
+  const eur = s?.total_lost_eur ?? (s ? Math.round(s.total_lost_kwh * tariff) : null);
 
   const logoRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -56,9 +56,9 @@ export default function TopBar({ plant, health }: { plant: PlantData | null; hea
           sub="excl. curtailment"
         />
         <KpiCard
-          label="Est. value lost"
+          label="Value lost"
           value={`€ ${fmt(eur)}`}
-          sub={plant?.tariff_is_assumption ? `assumed ${tariff} €/kWh` : `${tariff} €/kWh`}
+          sub={plant?.tariff_is_assumption ? `assumed ${tariff} €/kWh` : `provider tariff avg ${tariff} €/kWh`}
         />
         <KpiCard
           label="Curtailment"

@@ -3,7 +3,11 @@ const BASE = '/api';
 
 export interface PlantSummary {
   total_lost_kwh: number;
+  total_lost_eur?: number;
   total_curtailment_kwh: number;
+  total_curtailment_eur?: number;
+  average_tariff_eur_per_kwh?: number;
+  tariff_is_assumption?: boolean;
   inverter_count: number;
   critical_count?: number;
 }
@@ -29,13 +33,15 @@ export interface InverterMapItem {
   latest_factor: number;
   latest_relative_factor: number;
   total_lost_kwh: number;
+  total_lost_eur?: number;
+  average_tariff_eur_per_kwh?: number;
   lost_kwh_per_kwp: number;
   primary_reason: string;
   baseline_excluded: boolean;
   inverter_group: string;
 }
 export interface Recipient { name: string; email: string; role: string; department: string; }
-export interface EuroEstimate { eur: number; kwh: number; tariff_eur_per_kwh: number; is_assumption: boolean; }
+export interface EuroEstimate { eur: number; lost_kwh: number; tariff_eur_per_kwh: number; is_assumption: boolean; }
 export interface Finding {
   finding_id: string;
   inverter_id: string;
@@ -44,6 +50,7 @@ export interface Finding {
   classification: string;
   primary_reason: string;
   total_lost_kwh: number;
+  total_lost_eur?: number;
   latest_factor: number;
   euro?: EuroEstimate;
   recommended_action: string;

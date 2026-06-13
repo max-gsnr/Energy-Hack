@@ -142,10 +142,10 @@ def query_events(inverter_id: str = "", event_type: str = "", year: int = 0, min
 
 @tool
 def euro_from_kwh(kwh: float) -> str:
-    """Convert lost kWh to estimated EUR using the configured feed-in tariff.
+    """Convert arbitrary lost kWh to estimated EUR using the configured fallback tariff.
 
-    IMPORTANT: the tariff is an ASSUMPTION (no real tariff file imported). The result is
-    flagged accordingly and should be presented as an estimate.
+    Prefer exported total_lost_eur when available. This helper is only for ad hoc kWh
+    values that do not already carry provider tariff-derived EUR.
     """
     eur = round(float(kwh) * config.TARIFF_EUR_PER_KWH, 2)
     return json.dumps(
@@ -154,21 +154,41 @@ def euro_from_kwh(kwh: float) -> str:
             "eur": eur,
             "tariff_eur_per_kwh": config.TARIFF_EUR_PER_KWH,
             "is_assumption": config.TARIFF_IS_ASSUMPTION,
-            "note": "EUR is an estimate from an assumed flat feed-in tariff.",
+            "note": "EUR is an estimate from the configured fallback feed-in tariff.",
         }
     )
 
 
 # Convenience (not exposed to the LLM): build a EuroEstimate object.
-def euro_estimate(kwh: float):
+def euro_estimate(
+    kwh: float,
+    eur: float | None = None,
+    tariff_eur_per_kwh: float | None = None,
+    is_assumption: bool | None = None,
+):
     from backend.agents.models import EuroEstimate
+
+    if eur is not None:
+        tariff = tariff_eur_per_kwh if tariff_eur_per_kwh is not None else (
+            float(eur) / float(kwh) if float(kwh) else config.TARIFF_EUR_PER_KWH
+        )
+        assumed = bool(is_assumption) if is_assumption is not None else False
+        return EuroEstimate(
+            lost_kwh=round(float(kwh), 2),
+            eur=round(float(eur), 2),
+            tariff_eur_per_kwh=round(float(tariff), 6),
+            is_assumption=assumed,
+            note="Computed from provider feed-in tariff file."
+            if not assumed
+            else "Estimate from assumed flat feed-in tariff.",
+        )
 
     return EuroEstimate(
         lost_kwh=round(float(kwh), 2),
         eur=round(float(kwh) * config.TARIFF_EUR_PER_KWH, 2),
         tariff_eur_per_kwh=config.TARIFF_EUR_PER_KWH,
         is_assumption=config.TARIFF_IS_ASSUMPTION,
-        note="Estimate from assumed flat feed-in tariff (no real tariff file imported)."
+        note="Estimate from configured fallback feed-in tariff."
         if config.TARIFF_IS_ASSUMPTION
         else "Computed from configured tariff.",
     )

@@ -22,7 +22,8 @@ function Kpi({ label, value, sub }) {
 function Header({ plant, health }) {
   const s = plant?.summary;
   const tariff = plant?.tariff_eur_per_kwh ?? 0.1;
-  const eur = s ? Math.round(s.total_lost_kwh * tariff) : null;
+  const eur = s?.total_lost_eur ?? (s ? Math.round(s.total_lost_kwh * tariff) : null);
+  const tariffLabel = plant?.tariff_is_assumption ? `assumed ${tariff} €/kWh` : `provider tariff avg ${tariff} €/kWh`;
   return (
     <header className="top">
       <div className="brand">
@@ -34,7 +35,7 @@ function Header({ plant, health }) {
       </div>
       <div className="kpis">
         <Kpi label="Modeled loss" value={`${fmt(s?.total_lost_kwh)} kWh`} sub="excl. curtailment" />
-        <Kpi label="Est. value lost" value={`€ ${fmt(eur)}`} sub={`assumed ${tariff} €/kWh`} />
+        <Kpi label="Value lost" value={`€ ${fmt(eur)}`} sub={tariffLabel} />
         <Kpi label="Curtailment" value={`${fmt(s?.total_curtailment_kwh)} kWh`} />
         <Kpi
           label="Assistant"
@@ -110,7 +111,9 @@ function Detail({ f, onTimeline, onDispatch, tl, busy }) {
           <div className="stat"><div className="l">vs cohort</div><div className="v">{f.latest_relative_factor ?? '–'}</div></div>
         </div>
         <div className="badges">
-          {f.euro?.is_assumption && <span className="assumption">€ uses assumed tariff {f.euro.tariff_eur_per_kwh}/kWh</span>}
+          {f.euro?.is_assumption
+            ? <span className="assumption">€ uses assumed tariff {f.euro.tariff_eur_per_kwh}/kWh</span>
+            : <span className="synthetic">€ uses provider feed-in tariff {f.euro?.tariff_eur_per_kwh}/kWh</span>}
           {f.baseline_excluded && <span className="assumption">baseline-excluded (pre-existing)</span>}
         </div>
 

@@ -260,3 +260,58 @@ Re-export commands (export only; reads existing CSV/JSON, no retraining):
   machine, run the normal full export instead and the same envelope logic applies.
 - Note: the app venv needs `numpy`+`pandas` for the export script (the agent layer
   itself stays pandas-free).
+
+## Updates after Plant B (curtailment energy, temp, soiling, agent merge)
+
+Curtailment energy accounting fix (important): the per-row curtailment FLAG was
+fixed above, but `total_curtailment_kwh` was still computed as a leftover balance
+(`expected - actual - lost`). After the flag fix that collapsed to 0 and inflated
+loss. Now the pipeline measures curtailment energy DIRECTLY: `summarize_outputs`
+splits the per-row shortfall into `lost_kwh` (non-curtailed rows) vs `curtail_kwh`
+(curtailed rows), aggregates both, and the export uses the measured curtailment
+(not the balance). Reconciliation `actual + lost + curtailment - overperformance
+= expected` closes to the kWh. Plant A re-run/re-export done via
+`scripts/reexport_plant_a.sh`. Corrected Plant A totals: 93.8% delivered,
+loss 999,860 kWh (gross; net ~609k), curtailment 91,875 kWh.
+
+Temperature + soiling (Plant B):
+- Both temp sensors emit sentinel garbage (850, -200 C). `add_time_features` now
+  nulls readings outside -40..90 C. No-op for Plant A (clean sensors), so Plant A
+  did NOT need re-running.
+- New `prefer_module_temperature` flag on TwinConfig (default False = Plant A's
+  leakage-averse exogenous model). Set True for Plant B in the train script so the
+  twin MODELS thermal derating and the rolling factor isolates non-thermal loss.
+- Honest finding: Plant B's clean signal is DEGRADATION (~1%/yr, fleet median
+  1.00 in 2018 -> 0.94 by 2024, monotonic), NOT soiling. The earlier "summer dip
+  = soiling" was mostly thermal; after modeling temperature the residual season is
+  winter-low (snow/low-sun, confirmed by `Schnee` tickets), not classic soiling.
+  Do NOT pitch soiling for Plant B without a daily sawtooth (decline->rain
+  recovery) detector, which is not built. Tickets.xlsx (73 rows: Netzstörung,
+  MS-Wartung, Kommunikationsstörung, Schnee) is the ground truth for repairs/snow
+  and is NOT yet integrated.
+- Plant B data-quality caveats: 2024 is ~half-missing; 2025 accuracy collapses
+  (R2 0.32, delivery 86%) and the degradation factor spuriously reverses -> trust
+  2018-2024, caveat 2025+. Accuracy modest (R2 0.6-0.8) because every inverter is
+  identical (all metadata constant) so the model has only the per-unit baseline.
+- Plant B full export lives in `frontend/public/data_plant_b/` (37.6 GWh expected,
+  92.3% delivered, loss 2.94 GWh, curtailment 1.90 GWh, 107 inverters).
+
+Agent backend merged (rafay): `backend/agents/` (FastAPI: api.py, adapter.py,
+insight_engine.py, chatbot.py, timeline.py, dispatch.py, tools/). Serves the
+frontend (`test 2/project/SolarTwin.html`) at `/` and API at `/api/*` on port 8088
+(`uvicorn backend.agents.api:app --port 8088`). Dual-plant via `?plant=A|B`;
+`adapter.PLANT_DIRS` maps A->frontend/public/data, B->frontend/public/data_plant_b
+(reads our corrected exports). insight_engine honors the pre-existing-fault framing
+(baseline_excluded -> "pre-existing", never "degradation over time"). EUR now uses
+the downloaded provider feed-in tariff spreadsheets when present, with the old 0.10
+EUR/kWh value only as a fallback. Verified the adapter loads both plants. A stray
+`test 2/` scratch folder (binaries) was committed and should be cleaned. All on
+branch `plant-b-twin-and-curtailment-fix`.
+
+Resolved by pulled main: severity now uses the expected-degradation envelope and
+plant-health layer described above. Current side-data wiring: Plant A tariffs,
+tickets, error-code descriptions, and provenance docs are exported; Plant B tariffs,
+coordinates/KMZ availability, and provenance docs are exported. Ticket matches are
+component-aware: exact inverter tickets are direct evidence, while plant-wide and
+component-type-only tickets are contextual. Remaining next tasks: sawtooth soiling
+detector and cleaning `test 2/`.

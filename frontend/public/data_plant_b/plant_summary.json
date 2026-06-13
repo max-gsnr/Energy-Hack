@@ -1,4 +1,13 @@
 {
+  "average_tariff_eur_per_kwh": 0.100465,
+  "location": {
+    "description": "53.269000°, 12.121000°\n\n(Close to Silmersdorf, Germany)",
+    "kmz_available": true,
+    "latitude": 53.269,
+    "longitude": 12.121,
+    "source": "/Users/maxgsnr/Desktop/Energy Hack/Data/Plant_B/Additional_Data/Coordinate.txt"
+  },
+  "lost_eur_semantics": "lost_kwh multiplied by provider feed-in tariff where available; excludes curtailment",
   "lost_kwh_semantics": "performance loss excluding curtailment",
   "plant_health": {
     "baseline_year": 2018,
@@ -23,19 +32,57 @@
     "slow_degradation_samples": "5-minute chronic trend-state rows, not independent events.",
     "strong_samples": "5-minute acute residual flags."
   },
+  "source_documents": {
+    "coordinates_kmz": {
+      "available": true,
+      "path": "/Users/maxgsnr/Desktop/Energy Hack/Data/Plant_B/Additional_Data/Coordinate(google earth).kmz",
+      "used_for": "available map source file; not expanded into inverter geometry"
+    },
+    "coordinates_txt": {
+      "available": true,
+      "path": "/Users/maxgsnr/Desktop/Energy Hack/Data/Plant_B/Additional_Data/Coordinate.txt",
+      "used_for": "plant latitude/longitude metadata"
+    },
+    "data_use_policy": {
+      "available": true,
+      "path": "/Users/maxgsnr/Desktop/Energy Hack/Data/Shared/Data_Use_Policy.txt",
+      "used_for": "provider data-use provenance metadata"
+    },
+    "general_info": {
+      "available": true,
+      "path": "/Users/maxgsnr/Desktop/Energy Hack/Data/Plant_B/General_information_plant_B.pdf",
+      "used_for": "source reference document exposed in provenance metadata"
+    },
+    "tariff": {
+      "available": true,
+      "path": "/Users/maxgsnr/Desktop/Energy Hack/Data/Plant_B/Additional_Data/feed-in-tarrifs plant b.xlsx",
+      "used_for": "real EUR/kWh conversion for lost/curtailed/expected/actual energy"
+    }
+  },
+  "tariff_is_assumption": false,
+  "tariff_source": "provider_feed_in_tariff_file",
+  "total_actual_eur": 3602810.22,
   "total_actual_kwh": 34709852.91,
+  "total_curtailment_eur": 192125.67,
   "total_curtailment_kwh": 1895901.86,
+  "total_expected_eur": 3885579.96,
   "total_expected_kwh": 37604146.98,
+  "total_lost_eur": 292796.34,
   "total_lost_kwh": 2944271.42,
   "total_overperformance_offset_kwh": 1945879.2,
   "yearly": [
     {
+      "actual_eur": 518336.29,
       "actual_kwh": 6731640.05,
+      "average_tariff_eur_per_kwh": 0.077,
+      "curtailment_eur": 545.99,
       "curtailment_kwh": 7090.77,
       "error_samples": 0,
+      "expected_eur": 529572.89,
       "expected_kwh": 6877570.01,
       "explained_fault_samples": 0,
       "fast_degradation_samples": 1484462,
+      "lost_eur": 48591.94,
       "lost_kwh": 631064.13,
       "outage_samples": 93165,
       "overperformance_offset_kwh": 492224.94,
@@ -44,12 +91,17 @@
       "year": 2020
     },
     {
+      "actual_eur": 472955.04,
       "actual_kwh": 6142273.23,
+      "average_tariff_eur_per_kwh": 0.077,
+      "curtailment_eur": 24778.87,
       "curtailment_kwh": 321803.46,
       "error_samples": 0,
+      "expected_eur": 511010.56,
       "expected_kwh": 6636500.77,
       "explained_fault_samples": 0,
       "fast_degradation_samples": 1614241,
+      "lost_eur": 37860.44,
       "lost_kwh": 491694.03,
       "outage_samples": 30608,
       "overperformance_offset_kwh": 319269.96,
@@ -58,12 +110,17 @@
       "year": 2021
     },
     {
+      "actual_eur": 1356971.78,
       "actual_kwh": 5929434.34,
+      "average_tariff_eur_per_kwh": 0.211928,
+      "curtailment_eur": 67566.21,
       "curtailment_kwh": 290711.3,
       "error_samples": 0,
+      "expected_eur": 1455813.43,
       "expected_kwh": 6405595.91,
       "explained_fault_samples": 0,
       "fast_degradation_samples": 1901113,
+      "lost_eur": 97786.77,
       "lost_kwh": 454626.31,
       "outage_samples": 12705,
       "overperformance_offset_kwh": 269176.03,
@@ -72,12 +129,17 @@
       "year": 2022
     },
     {
+      "actual_eur": 526264.37,
       "actual_kwh": 6560637.02,
+      "average_tariff_eur_per_kwh": 0.08671,
+      "curtailment_eur": 20215.0,
       "curtailment_kwh": 247724.17,
       "error_samples": 0,
+      "expected_eur": 565900.77,
       "expected_kwh": 7081754.63,
       "explained_fault_samples": 0,
       "fast_degradation_samples": 1715375,
+      "lost_eur": 45820.8,
       "lost_kwh": 565880.27,
       "outage_samples": 16288,
       "overperformance_offset_kwh": 292486.82,
@@ -86,12 +148,17 @@
       "year": 2023
     },
     {
+      "actual_eur": 246806.32,
       "actual_kwh": 3213624.0,
+      "average_tariff_eur_per_kwh": 0.0768,
+      "curtailment_eur": 13558.25,
       "curtailment_kwh": 176539.69,
       "error_samples": 0,
+      "expected_eur": 266062.15,
       "expected_kwh": 3464350.94,
       "explained_fault_samples": 0,
       "fast_degradation_samples": 178559,
+      "lost_eur": 20521.62,
       "lost_kwh": 267208.6,
       "outage_samples": 2910,
       "overperformance_offset_kwh": 193021.34,
@@ -100,12 +167,17 @@
       "year": 2024
     },
     {
+      "actual_eur": 481476.43,
       "actual_kwh": 6132244.27,
+      "average_tariff_eur_per_kwh": 0.081963,
+      "curtailment_eur": 65461.36,
       "curtailment_kwh": 852032.47,
       "error_samples": 0,
+      "expected_eur": 557220.17,
       "expected_kwh": 7138374.71,
       "explained_fault_samples": 0,
       "fast_degradation_samples": 1466874,
+      "lost_eur": 42214.77,
       "lost_kwh": 533798.09,
       "outage_samples": 17103,
       "overperformance_offset_kwh": 379700.11,
