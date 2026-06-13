@@ -45,7 +45,7 @@ def daily_clean_factor(
 
     rows["actual_kwh_clean"] = rows["p_ac_kw"] * (5 / 60)
     rows["expected_kwh_clean"] = rows["p_pred_norm"] * rows["pdc_kwp"] * (5 / 60)
-    daily = rows.groupby(["inverter_id", "date"], as_index=False).agg(
+    daily = rows.groupby(["inverter_id", "date"], as_index=False, observed=True).agg(
         actual_kwh_clean=("actual_kwh_clean", "sum"),
         expected_kwh_clean=("expected_kwh_clean", "sum"),
         n_clean_samples=("timestamp", "count"),
@@ -59,7 +59,7 @@ def daily_clean_factor(
             ["inverter_id", "date", "factor_day", "n_clean_samples"]
         ]
 
-    median_expected = daily.groupby("inverter_id")["expected_kwh_clean"].transform(
+    median_expected = daily.groupby("inverter_id", observed=True)["expected_kwh_clean"].transform(
         "median"
     )
     daily = daily[
@@ -85,7 +85,7 @@ def rolling_factor(
 
     pieces = []
     window = f"{int(window_days)}D"
-    for inverter_id, group in daily.copy().groupby("inverter_id"):
+    for inverter_id, group in daily.copy().groupby("inverter_id", observed=True):
         group = group.sort_values("date").copy()
         group["date"] = pd.to_datetime(group["date"])
         indexed = group.set_index("date")
@@ -127,18 +127,18 @@ def fleet_relative_factor(
         how="left",
     )
 
-    fleet_median = out.groupby("date")["factor"].transform("median")
+    fleet_median = out.groupby("date", observed=True)["factor"].transform("median")
     out["cohort_median_factor"] = np.nan
 
     if cohort_key in out.columns:
-        cohort_group = out.groupby(["date", cohort_key])["factor"]
+        cohort_group = out.groupby(["date", cohort_key], observed=True)["factor"]
         cohort_count = cohort_group.transform("count")
         cohort_median = cohort_group.transform("median")
         use_cohort = cohort_count >= min_cohort
         out.loc[use_cohort, "cohort_median_factor"] = cohort_median.loc[use_cohort]
 
     if "capacity_band" in out.columns:
-        band_group = out.groupby(["date", "capacity_band"])["factor"]
+        band_group = out.groupby(["date", "capacity_band"], observed=True)["factor"]
         band_count = band_group.transform("count")
         band_median = band_group.transform("median")
         use_band = out["cohort_median_factor"].isna() & (band_count >= min_cohort)
@@ -166,7 +166,7 @@ def factor_trend(
 
     rows = []
     lookback = pd.Timedelta(days=lookback_days)
-    for inverter_id, group in rolling.groupby("inverter_id"):
+    for inverter_id, group in rolling.groupby("inverter_id", observed=True):
         group = group.sort_values("date").copy()
         group["date_dt"] = pd.to_datetime(group["date"])
         for _, row in group.iterrows():
