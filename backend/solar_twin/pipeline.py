@@ -418,11 +418,17 @@ def summarize_outputs(frame: pd.DataFrame, config: TwinConfig) -> dict[str, pd.D
         scored["current_expected_norm"] * scored["pdc_kwp"] * (5 / 60)
     )
     scored["actual_kwh"] = scored["p_ac_kw"] * (5 / 60)
-    scored["lost_kw"] = np.maximum(
+    # Shortfall vs the frozen-healthy baseline, split by cause: when the grid was
+    # throttling (curtailment_active) the shortfall is curtailment, otherwise it
+    # is recoverable performance loss. Measuring curtailment energy directly here
+    # (rather than as a leftover balance downstream) keeps the two buckets honest.
+    shortfall_kw = np.maximum(
         0, scored["p_pred_norm"] * scored["pdc_kwp"] - scored["p_ac_kw"]
     )
-    scored.loc[scored["curtailment_active"], "lost_kw"] = 0
+    scored["lost_kw"] = shortfall_kw.where(~scored["curtailment_active"], 0.0)
+    scored["curtail_kw"] = shortfall_kw.where(scored["curtailment_active"], 0.0)
     scored["lost_kwh"] = scored["lost_kw"] * (5 / 60)
+    scored["curtail_kwh"] = scored["curtail_kw"] * (5 / 60)
     scoreable = (~scored["curtailment_active"]) & (~scored["warmup"].fillna(True))
     scored["mild_anomaly"] = (scored["acute_residual_z"] <= config.mild_sigma) & scoreable
     scored["strong_anomaly"] = (
@@ -475,6 +481,7 @@ def summarize_outputs(frame: pd.DataFrame, config: TwinConfig) -> dict[str, pd.D
         current_expected_kwh=("current_expected_kwh", "sum"),
         actual_kwh=("actual_kwh", "sum"),
         lost_kwh=("lost_kwh", "sum"),
+        curtailment_kwh=("curtail_kwh", "sum"),
         mean_residual_z=("residual_z", "mean"),
         min_residual_z=("residual_z", "min"),
         mean_acute_residual_z=("acute_residual_z", "mean"),
@@ -531,6 +538,7 @@ def summarize_outputs(frame: pd.DataFrame, config: TwinConfig) -> dict[str, pd.D
         expected_kwh=("expected_kwh", "sum"),
         actual_kwh=("actual_kwh", "sum"),
         lost_kwh=("lost_kwh", "sum"),
+        curtailment_kwh=("curtail_kwh", "sum"),
         strong_samples=("strong_anomaly", "sum"),
         outage_samples=("outage", "sum"),
         slow_degradation_samples=("slow_degradation", "sum"),
@@ -700,6 +708,7 @@ def run_pipeline(config: TwinConfig, output_dir: Path, artifact_dir: Path) -> di
     joblib.dump(selected_model, artifact_dir / "ac_twin_model.joblib")
 
     metrics = {
+        "plant": config.plant.name,
         "selected_model": "exogenous_only" if use_exogenous else "with_module_temperature",
         "train_years": list(config.train_years),
         "calibration_years": list(config.calibration_years),

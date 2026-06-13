@@ -329,6 +329,7 @@ def build_plant_summary(plant_daily: pd.DataFrame) -> dict[str, Any]:
             expected_kwh=("expected_kwh", "sum"),
             actual_kwh=("actual_kwh", "sum"),
             lost_kwh=("lost_kwh", "sum"),
+            curtailment_kwh=("curtailment_kwh", "sum"),
             strong_samples=("strong_samples", "sum"),
             outage_samples=("outage_samples", "sum"),
             slow_degradation_samples=("slow_degradation_samples", "sum"),
@@ -340,9 +341,15 @@ def build_plant_summary(plant_daily: pd.DataFrame) -> dict[str, Any]:
     )
     yearly_rows = []
     for _, row in yearly.iterrows():
-        balance = float(row["expected_kwh"]) - float(row["actual_kwh"]) - float(row["lost_kwh"])
-        curtailment = max(0.0, balance)
-        overperformance = max(0.0, -balance)
+        # Curtailment is now measured directly during throttled periods. The
+        # overperformance offset closes the reconciliation when actual exceeds
+        # expected on some intervals: (lost + curtailment) - (expected - actual).
+        curtailment = float(row["curtailment_kwh"])
+        overperformance = max(
+            0.0,
+            float(row["lost_kwh"]) + curtailment
+            - (float(row["expected_kwh"]) - float(row["actual_kwh"])),
+        )
         yearly_rows.append(
             {
                 "year": int(row["year"]),
@@ -362,9 +369,10 @@ def build_plant_summary(plant_daily: pd.DataFrame) -> dict[str, Any]:
     total_expected = float(plant["expected_kwh"].sum())
     total_actual = float(plant["actual_kwh"].sum())
     total_lost = float(plant["lost_kwh"].sum())
-    total_balance = total_expected - total_actual - total_lost
-    total_curtailment = max(0.0, total_balance)
-    total_overperformance = max(0.0, -total_balance)
+    total_curtailment = float(plant["curtailment_kwh"].sum())
+    total_overperformance = max(
+        0.0, total_lost + total_curtailment - (total_expected - total_actual)
+    )
     return {
         "total_expected_kwh": finite_or_none(total_expected, 2),
         "total_actual_kwh": finite_or_none(total_actual, 2),

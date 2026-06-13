@@ -47,10 +47,9 @@ class PlantConfig:
     name: str
     main_path: Path
     system_path: Path
-    env_columns: dict
+    env_columns: dict[str, str]
     has_dc: bool = True
     errors_path: Path | None = None
-    timestamp_in_index: bool = True
     split_row_marker: str | None = None
 
 
@@ -61,7 +60,6 @@ PLANT_A = PlantConfig(
     env_columns=ENV_COLUMNS,
     has_dc=True,
     errors_path=PLANT_A_ERRORS,
-    timestamp_in_index=True,
     split_row_marker="004.02",
 )
 
@@ -72,7 +70,6 @@ PLANT_B = PlantConfig(
     env_columns=ENV_COLUMNS_B,
     has_dc=False,
     errors_path=None,
-    timestamp_in_index=True,
     split_row_marker=None,
 )
 
@@ -240,16 +237,20 @@ def load_wide_frame(
     if include_dc and plant.has_dc:
         cols += [inv.u_dc for inv in inverters if inv.u_dc]
         cols += [inv.i_dc for inv in inverters if inv.i_dc]
-    if not plant.timestamp_in_index:
-        cols = ["timestamp"] + cols
-    df = pd.read_parquet(plant.main_path, columns=cols)
+    # Push the daylight filter into the read so we never materialise the ~70% of
+    # night/low-light rows (irradiation <= 100 or altitude <= 8). This is the same
+    # condition applied later in build_long_frame, so results are unchanged.
+    filters = [
+        (env["irradiation"], ">", 100),
+        (env["sun_altitude"], ">", 8),
+    ]
+    df = pd.read_parquet(plant.main_path, columns=cols, filters=filters)
     df = df.rename(columns={source: target for target, source in env.items()})
     float_cols = df.select_dtypes("float64").columns
     df[float_cols] = df[float_cols].astype("float32")
-    if plant.timestamp_in_index:
-        df["timestamp"] = pd.to_datetime(df.index, errors="coerce")
-    else:
-        df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce")
+    # Both plants store the timestamp as the datetime index; tolerate a column too.
+    ts = df["timestamp"] if "timestamp" in df.columns else df.index
+    df["timestamp"] = pd.to_datetime(ts, errors="coerce")
     return df
 
 
