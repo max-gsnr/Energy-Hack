@@ -90,7 +90,7 @@ Key exported outputs:
 
 ## Repo Map
 
-- [MEMORY.md](MEMORY.md): running project memory and decisions.
+- [Max_Memory.md](Max_Memory.md): Max's running project memory and decisions.
 - [docs/model_plan.md](docs/model_plan.md): ML/twin plan.
 - [docs/data_dictionary.md](docs/data_dictionary.md): important data fields and derived metrics.
 - [scripts/import_data.sh](scripts/import_data.sh): reproducible data import.
