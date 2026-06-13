@@ -73,17 +73,38 @@ timestamp, inverter_id, P_AC, metadata, environment, optional DC diagnostics
 Residual_i,t = P_norm_actual_i,t - P_norm_pred_i,t
 ```
 
-9. Standardize residuals by irradiance/altitude sigma bins.
-10. Aggregate lost kWh by day/month and rank inverters by energy impact.
+9. Add a causal rolling health factor, estimated only from clean daylight days:
+
+```text
+factor_i,d = rolling_median(actual_clean_kWh / frozen_expected_clean_kWh)
+current_expected_norm_i,t = P_norm_pred_i,t * factor_i,d
+acute_residual_i,t = P_norm_actual_i,t - current_expected_norm_i,t
+relative_factor_i,d = factor_i,d / cohort_median_factor_d
+```
+
+The frozen residual remains the total decline versus the healthy baseline. The acute residual is used for new fault detection after slow degradation has been accounted for. The relative factor shows inverter-specific degradation versus the peer/fleet cohort.
+
+10. Standardize both frozen and acute residuals by irradiance/altitude sigma bins.
+11. Aggregate lost kWh by day/month and rank inverters by energy impact.
 
 ## Anomaly Types
 
 - outage: expected high, actual near zero
-- underperformance: actual persistently below expected in a multi-hour window
+- acute fault: acute residual strongly negative after rolling health correction
+- slow degradation: frozen residual persistently negative while acute residual is near normal
+- fast degradation: rolling factor trend falls faster than the configured threshold
 - conversion issue: DC input normal, AC output low
 - DC-side issue: current/voltage abnormal under good irradiation
 - curtailment: EVU/DV active, labeled directly rather than learned
 - thermal derating: high module temperature, lower output
 - group-level issue: several grouped inverters abnormal together
 - data issue: missing values, impossible values, flatlines
-- degradation: residual trend worsens over months/years
+- degradation: rolling factor or relative factor worsens over months/years
+
+## Rolling Layer
+
+The rolling layer does not retrain or fine-tune the frozen model. It is a causal multiplier on top of the frozen prediction.
+
+Clean-day selection excludes curtailment, active errors, outages, missing values, and very low expected output. It does not use frozen residual or residual z-score, because that would hide real degradation by removing the exact days needed to estimate it.
+
+Sampled smoke runs automatically disable this layer because row sampling breaks daily continuity.

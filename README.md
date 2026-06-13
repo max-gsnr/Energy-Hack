@@ -7,6 +7,7 @@ The core task is a data twin, not a photorealistic 3D model. We learn normal inv
 ## What We Are Building
 
 - ML model for expected normalized inverter output.
+- Rolling health factor that separates slow degradation from sudden faults.
 - Residual/anomaly scoring per inverter and timestamp.
 - Explanations using curtailment, error codes, operational states, service tickets, and temperature.
 - Frontend visualization that shows the plant/inverter groups and highlights abnormal behavior.
@@ -80,6 +81,8 @@ Key exported outputs:
 - `outputs/solar_twin/daily_inverter_scores.csv`
 - `outputs/solar_twin/monthly_inverter_scores.csv`
 - `outputs/solar_twin/plant_daily_scores.csv`
+- `outputs/solar_twin/rolling_factor_history.csv`
+- `outputs/solar_twin/degradation_summary.csv`
 - `outputs/solar_twin/anomaly_events.csv`
 - `outputs/solar_twin/top_anomaly_samples.csv`
 - `artifacts/solar_twin/ac_twin_model.joblib`
@@ -93,3 +96,4 @@ Key exported outputs:
 - [scripts/import_data.sh](scripts/import_data.sh): reproducible data import.
 - [scripts/inspect_data.py](scripts/inspect_data.py): quick data sanity check.
 - [scripts/train_solar_twin.py](scripts/train_solar_twin.py): frozen-baseline ML pipeline.
+- [scripts/demo_synthetic_step_drop.py](scripts/demo_synthetic_step_drop.py): rolling-factor demonstration.

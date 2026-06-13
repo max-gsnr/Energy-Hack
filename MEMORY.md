@@ -118,6 +118,16 @@ Important implementation decisions:
 
 Train on 2017, calibrate on 2018, evaluate 2019-2025. Optionally compare a 2017-2018 training run, but avoid continuous fine-tuning because it can hide degradation/faults.
 
+The implemented pipeline now separates three signals:
+
+```text
+Frozen residual = p_norm - p_pred_norm
+Acute residual = p_norm - p_pred_norm * rolling_factor
+Relative factor = rolling_factor / cohort_median_factor
+```
+
+Use frozen residual/lost kWh for total decline versus the healthy 2017 baseline. Use acute residual z-score for new fault detection after slow degradation has been accounted for. Use relative factor and factor trend for degradation versus the peer/fleet cohort.
+
 Runnable command:
 
 ```bash
@@ -155,14 +165,17 @@ Implemented `scripts/train_solar_twin.py` with backend modules under `backend/so
 The pipeline:
 - builds a long-format Plant A dataset
 - trains a frozen AC baseline model on normalized output
+- adds a causal rolling health-factor layer without retraining the frozen model
 - keeps DC voltage/current out of AC model features
-- uses DC only for post-hoc diagnostics
+- uses DC only for post-hoc diagnostics keyed from acute anomaly flags
 - vets 2017 baseline inverters against peer cohorts
 - compares module-temperature vs exogenous-only ablation
 - treats EVU/DV curtailment as a rule overlay
-- calibrates sigma-binned standardized residuals
-- exports daily/monthly lost-kWh rankings, anomaly events, top 5-minute samples, baseline vetting, sigma calibration, and model artifacts
+- calibrates sigma-binned standardized frozen and acute residuals
+- exports daily/monthly lost-kWh rankings, rolling factor history, degradation summary, anomaly events, top 5-minute samples, baseline vetting, sigma calibration, and model artifacts
 
 Smoke validation completed:
 - `python scripts/train_solar_twin.py --max-inverters 8 --max-rows-per-year 12000 --score-years 2019,2020`
 - `python scripts/train_solar_twin.py --max-rows-per-year 15000 --score-years 2019`
+- `python scripts/demo_synthetic_step_drop.py`
+- `python scripts/train_solar_twin.py --max-inverters 8 --score-years 2019`
