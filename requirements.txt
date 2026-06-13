@@ -24,3 +24,4 @@ statsmodels
 # Agent layer (Rafay)
 google-genai
 python-dotenv
+python-multipart

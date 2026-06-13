@@ -14,6 +14,7 @@ const NAV = [
   { id: "inverters", label: "Inverters", icon: "grid" },
   { id: "anomalies", label: "Anomalies", icon: "alert" },
   { id: "emails", label: "Dispatch Emails", icon: "mail" },
+  { id: "people", label: "People", icon: "user" },
 ];
 
 function TopBar({ plantKey, setPlantKey }) {
@@ -73,7 +74,7 @@ function App() {
   const [tab, setTab] = useState("overview");
   const [selInv, setSelInv] = useState(null);
   const [dispatchAnom, setDispatchAnom] = useState(null);
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
   const [emails, setEmails] = useState(() => ({ A: SOLAR.plants.A.emails.map((e) => ({ ...e })), B: SOLAR.plants.B.emails.map((e) => ({ ...e })) }));
   const [dispatched, setDispatched] = useState(() => ({ A: new Set(SOLAR.plants.A.emails.map((e) => e.anomId)), B: new Set(SOLAR.plants.B.emails.map((e) => e.anomId)) }));
   const [toast, setToast] = useState(null);
@@ -101,6 +102,7 @@ function App() {
   const content = tab === "overview" ? React.createElement(Overview, { plant, onOpenInverter: openInverter })
     : tab === "inverters" ? React.createElement(Inverters, { plant, selectedId: selInv, onSelect: setSelInv, onDispatch: setDispatchAnom, defaultMode: tw.heatMode })
     : tab === "anomalies" ? React.createElement(Anomalies, { plant, onDispatch: setDispatchAnom, onOpenInverter: openInverter, dispatchedIds: dispatched[plantKey], showAvatars: tw.routingAvatars })
+    : tab === "people" ? React.createElement(People, { plant })
     : React.createElement(Emails, { emails: emails[plantKey], onAction: onEmailAction });
 
   return React.createElement("div", { style: { height: "100vh", display: "flex", flexDirection: "column", background: "var(--canvas)", overflow: "hidden" } },
@@ -145,7 +147,7 @@ function mountApp() {
   if (el.__solarRoot) return;            // idempotent — never createRoot twice
   // @babel/standalone executes src scripts asynchronously and out of order, so a
   // sibling component may not be registered yet. Wait until all are present.
-  const need = ["Overview", "Inverters", "Anomalies", "Emails", "Chatbot", "DispatchPopup", "Icon", "useTweaks", "TweaksPanel"];
+  const need = ["Overview", "Inverters", "Anomalies", "Emails", "People", "Chatbot", "DispatchPopup", "Icon", "useTweaks", "TweaksPanel"];
   const ready = need.every((k) => typeof window[k] === "function") && window.FlowDesignSystem_96ad7f && typeof window.FlowDesignSystem_96ad7f.SidebarItem === "function";
   if (!ready) { setTimeout(mountApp, 25); return; }
   el.__solarRoot = ReactDOM.createRoot(el);

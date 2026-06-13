@@ -21,3 +21,6 @@ Data/Shared/
 
 frontend/solartwin/.next/
 .next/
+
+# Large raw provider dataset staged locally (multi-GB); never commit.
+entire dataset/

@@ -1,0 +1,90 @@
+[
+  {
+    "id": "raphael",
+    "name": "Raphael May",
+    "role": "Senior O&M Engineer",
+    "department": "O&M / Field Operations",
+    "cats": [
+      "hardware"
+    ],
+    "photo": "assets/people/raphael-may.png",
+    "blurb": "Owns inverter hardware faults — IGBT, fans, thermal."
+  },
+  {
+    "id": "sonja",
+    "name": "Sonja Körner",
+    "role": "Senior O&M Engineer",
+    "department": "O&M / Field Operations",
+    "cats": [
+      "performance"
+    ],
+    "photo": "assets/people/sonja-koerner.png",
+    "blurb": "String & MPPT performance, soiling, clipping."
+  },
+  {
+    "id": "frederik",
+    "name": "Frederik Kliemt",
+    "role": "Senior O&M Engineer",
+    "department": "O&M / Field Operations",
+    "cats": [
+      "safety"
+    ],
+    "photo": "assets/people/frederik-kliemt.png",
+    "blurb": "Electrical safety — arc faults, insulation, isolation."
+  },
+  {
+    "id": "felix",
+    "name": "Felix Harder",
+    "role": "Ingenieur Mittelspannungsplanung",
+    "department": "Grid / Network",
+    "cats": [
+      "mv"
+    ],
+    "photo": "assets/people/felix-harder.png",
+    "blurb": "Medium-voltage: transformers, reactive power."
+  },
+  {
+    "id": "vanessa",
+    "name": "Vanessa Schöll",
+    "role": "Teamleader Grid Connection Mgmt",
+    "department": "Grid / Network",
+    "cats": [
+      "grid"
+    ],
+    "photo": "assets/people/vanessa-schoell.png",
+    "blurb": "Grid export, curtailment, DSO coordination."
+  },
+  {
+    "id": "dimitar",
+    "name": "Dimitar Gendov",
+    "role": "Senior Project Engineer",
+    "department": "Engineering",
+    "cats": [
+      "capex"
+    ],
+    "photo": "assets/people/dimitar-gendov.png",
+    "blurb": "Replace-verdict reviews & component capex."
+  },
+  {
+    "id": "malte",
+    "name": "Malte Sombrutzki",
+    "role": "1st Level Support Lead",
+    "department": "Plant Monitoring / SCADA",
+    "cats": [
+      "monitoring"
+    ],
+    "photo": "assets/people/malte-sombrutzki.png",
+    "blurb": "Comms dropouts, monitoring, first response."
+  },
+  {
+    "id": "cayen",
+    "name": "Cayen Kröger",
+    "role": "Projektcontrollerin",
+    "department": "Finance / Commercial",
+    "cats": [
+      "finance"
+    ],
+    "photo": "assets/people/cayen-kroeger.png",
+    "blurb": "Financial sign-off on high-€ loss events."
+  }
+]

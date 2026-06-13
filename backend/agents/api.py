@@ -19,13 +19,13 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from backend.agents import adapter, chatbot, config, contacts, dispatch, insight_engine, timeline
+from backend.agents import adapter, chatbot, config, contacts, dispatch, insight_engine, people, timeline
 from backend.agents.models import Finding
 
 # Path to the Claude Design frontend directory
@@ -100,6 +100,78 @@ def plant_map(plant: str = "A") -> list:
 @app.get("/api/contacts")
 def contact_list() -> list:
     return [c.model_dump() for c in contacts.all_contacts()]
+
+
+@app.get("/api/people")
+def people_list() -> list:
+    return people.load_people()
+
+
+@app.post("/api/people")
+async def people_add(
+    name: str = Form(...),
+    role: str = Form(...),
+    department: str = Form(""),
+    cats: str = Form(""),
+    blurb: str = Form(""),
+    email: str = Form(""),
+    photo: UploadFile | None = File(None),
+) -> dict:
+    cat_list = [c.strip() for c in cats.split(",") if c.strip()]
+    photo_bytes = await photo.read() if photo is not None else None
+    photo_filename = photo.filename if photo is not None else None
+    try:
+        return people.add_person(
+            name=name,
+            role=role,
+            department=department,
+            cats=cat_list,
+            blurb=blurb,
+            email=email or None,
+            photo_bytes=photo_bytes,
+            photo_filename=photo_filename,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.put("/api/people/{person_id}")
+async def people_update(
+    person_id: str,
+    name: str = Form(...),
+    role: str = Form(...),
+    department: str = Form(""),
+    cats: str = Form(""),
+    blurb: str = Form(""),
+    email: str = Form(""),
+    photo: UploadFile | None = File(None),
+) -> dict:
+    cat_list = [c.strip() for c in cats.split(",") if c.strip()]
+    photo_bytes = await photo.read() if photo is not None else None
+    photo_filename = photo.filename if photo is not None else None
+    try:
+        return people.update_person(
+            person_id,
+            name=name,
+            role=role,
+            department=department,
+            cats=cat_list,
+            blurb=blurb,
+            email=email or None,
+            photo_bytes=photo_bytes,
+            photo_filename=photo_filename,
+        )
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=f"unknown person {person_id}") from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.delete("/api/people/{person_id}")
+def people_delete(person_id: str) -> dict:
+    if not people.delete_person(person_id):
+        raise HTTPException(status_code=404, detail=f"unknown person {person_id}")
+    return {"deleted": person_id}
 
 
 @app.get("/api/findings")

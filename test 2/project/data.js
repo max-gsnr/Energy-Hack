@@ -24,9 +24,11 @@
     healthy:  "var(--green-500)",
   };
 
-  // ── employee directory (hardcoded — photos live in assets/people/) ─────────
+  // ── employee directory ─────────────────────────────────────────────────────
+  // Live from GET /api/people (seeded backend-side); falls back to this list if
+  // the backend is unreachable. Photos live in assets/people/.
   const P = "assets/people/";
-  const EMPLOYEES = [
+  const EMPLOYEES_FALLBACK = [
     { id: "raphael",  name: "Raphael May",      role: "Senior O&M Engineer",              photo: P + "raphael-may.png",      cats: ["hardware"],    blurb: "Owns inverter hardware faults — IGBT, fans, thermal." },
     { id: "sonja",    name: "Sonja Körner",     role: "Senior O&M Engineer",              photo: P + "sonja-koerner.png",    cats: ["performance"], blurb: "String & MPPT performance, soiling, clipping." },
     { id: "frederik", name: "Frederik Kliemt",  role: "Senior O&M Engineer",              photo: P + "frederik-kliemt.png",  cats: ["safety"],      blurb: "Electrical safety — arc faults, insulation, isolation." },
@@ -36,36 +38,80 @@
     { id: "malte",    name: "Malte Sombrutzki", role: "1st Level Support Lead",           photo: P + "malte-sombrutzki.png", cats: ["monitoring"],  blurb: "Comms dropouts, monitoring, first response." },
     { id: "cayen",    name: "Cayen Kröger",     role: "Projektcontrollerin",              photo: P + "cayen-kroeger.png",    cats: ["finance"],     blurb: "Financial sign-off on high-€ loss events." },
   ];
-  const empById = Object.fromEntries(EMPLOYEES.map(e => [e.id, e]));
+  // Mutable — reassigned once /api/people resolves and on refreshPeople().
+  let EMPLOYEES = EMPLOYEES_FALLBACK;
+  let empById = Object.fromEntries(EMPLOYEES.map(e => [e.id, e]));
 
-  // Map API contact names → design employee IDs (photo-backed employees)
-  const NAME_TO_EMP_ID = {
-    "Raphael May":          "raphael",
-    "Sonja Körner":        "sonja",
-    "Sonja Koerner":       "sonja",
-    "Frederik Kliemt":     "frederik",
-    "Felix Harder":        "felix",
-    "Vanessa Schöll":      "vanessa",
-    "Vanessa Schoell":     "vanessa",
-    "Dimitar Gendov":      "dimitar",
-    "Malte Sombrutzki":    "malte",
-    "Cayen Kröger":        "cayen",
-    "Cayen Kroeger":       "cayen",
-    // API contacts not in photo set → nearest role match
-    "Javier Larios":       "dimitar",    // Technical Asset Management
-    "Matthias Steege":     "dimitar",    // Engineering lead
-    "Vishal Kaushik":      "malte",      // SCADA / monitoring
-    "Ahmed Abdalnabe":     "malte",
-    "Mathias Behrendt":    "raphael",    // Field ops
-    "Paul Christian Kossmann": "cayen",  // Asset manager
-    "Gwen Schliemann":     "cayen",      // Finance
-    "Nils Ahrens":         "cayen",
-    "Stefan Müller":       "dimitar",
-    "Christoph Koeppen":   "dimitar",
+  // Backend-only contact names (no photo) → nearest design employee by role.
+  const STATIC_NAME_ALIASES = {
+    "Javier Larios":           "dimitar",  // Technical Asset Management
+    "Matthias Steege":         "dimitar",  // Engineering lead
+    "Vishal Kaushik":          "malte",    // SCADA / monitoring
+    "Ahmed Abdalnabe":         "malte",
+    "Mathias Behrendt":        "raphael",  // Field ops
+    "Paul Christian Kossmann": "cayen",    // Asset manager
+    "Gwen Schliemann":         "cayen",    // Finance
+    "Nils Ahrens":             "cayen",
+    "Stefan Müller":           "dimitar",
+    "Christoph Koeppen":       "dimitar",
   };
-
+  function buildNameMap(list) {
+    const m = {};
+    list.forEach(e => { m[e.name] = e.id; });
+    Object.entries(STATIC_NAME_ALIASES).forEach(([k, v]) => { if (!m[k]) m[k] = v; });
+    return m;
+  }
+  let NAME_TO_EMP_ID = buildNameMap(EMPLOYEES);
   function nameToEmpId(name) {
-    return NAME_TO_EMP_ID[name] || "malte"; // fallback: monitoring
+    return NAME_TO_EMP_ID[name] || (EMPLOYEES[0] && EMPLOYEES[0].id) || "malte";
+  }
+
+  // Normalize a /api/people record into the employee shape the UI expects.
+  function normalizeEmp(rec) {
+    return {
+      id: rec.id, name: rec.name, role: rec.role,
+      department: rec.department || "",
+      photo: rec.photo || (P + "raphael-may.png"),
+      cats: Array.isArray(rec.cats) ? rec.cats : [],
+      blurb: rec.blurb || "",
+      email: rec.email || "",
+    };
+  }
+
+  async function fetchPeople() {
+    const r = await fetch("/api/people");
+    if (!r.ok) throw new Error(`/people ${r.status}`);
+    const recs = await r.json();
+    return (Array.isArray(recs) ? recs : []).map(normalizeEmp);
+  }
+  function applyPeople(list) {
+    EMPLOYEES = list;
+    empById = Object.fromEntries(list.map(e => [e.id, e]));
+    NAME_TO_EMP_ID = buildNameMap(list);
+    if (window.SOLAR) { window.SOLAR.employees = list; window.SOLAR.empById = empById; }
+  }
+  // Re-fetch the directory after a person is added; updates SOLAR in place.
+  async function refreshPeople() {
+    try { const list = await fetchPeople(); if (list.length) applyPeople(list); return EMPLOYEES; }
+    catch (e) { console.warn("[SolarTwin] /api/people refresh failed", e); return EMPLOYEES; }
+  }
+
+  // ── category-aware recommendation ──────────────────────────────────────────
+  // Candidates = employees whose cats include the issue category; the most
+  // specialized (fewest cats) wins, so a newly added single-category specialist
+  // can outrank a generalist. High-€ / replace verdicts escalate first.
+  function bestMatch(category, employees) {
+    const cands = (employees || EMPLOYEES).filter(e => (e.cats || []).includes(category));
+    if (!cands.length) return null;
+    return cands.slice().sort((a, b) => (a.cats || []).length - (b.cats || []).length)[0].id;
+  }
+  function recommendCat(category, verdict, lossEur, employees) {
+    employees = employees || EMPLOYEES;
+    if (lossEur > 9000 && verdict === "Replace") { const m = bestMatch("capex", employees); if (m) return m; }
+    if (lossEur > 14000) { const m = bestMatch("finance", employees); if (m) return m; }
+    const m = bestMatch(category, employees); if (m) return m;
+    const mon = bestMatch("monitoring", employees); if (mon) return mon;
+    return employees[0] ? employees[0].id : "malte";
   }
 
   // ── classification → display type, category ───────────────────────────────
@@ -288,7 +334,12 @@ SolarTwin Plant Analyst`;
         action:         finding.recommended_action || "Review inverter performance data.",
         verdict:        formatVerdict(finding.repair?.verdict),
         detected:       new Date().toISOString().slice(0, 10),
-        recommendedTo:  nameToEmpId(finding.routing?.[0]?.name),
+        recommendedTo:  recommendCat(
+                          classToCategory(finding.classification),
+                          formatVerdict(finding.repair?.verdict),
+                          finding.euro?.eur || eur(finding.total_lost_kwh, tariff),
+                          EMPLOYEES,
+                        ),
       }] : [];
 
       return {
@@ -397,12 +448,7 @@ SolarTwin Plant Analyst`;
       { t: "Grid frequency-response lag", cat: "grid",     root: "FCR activation latency 1.4s.",                      act: "Tune droop controller.",                         verdict: "Repair" },
       { t: "HV bushing partial discharge", cat: "mv",      root: "PD activity on 33 kV bushing.",                     act: "Schedule PD survey; plan replacement.",          verdict: "Replace" },
     ];
-    const routeCat = (cat, verdict, lossEur) => {
-      if (lossEur > 9000 && verdict === "Replace") return "dimitar";
-      if (lossEur > 14000) return "cayen";
-      const map = { hardware: "raphael", performance: "sonja", safety: "frederik", mv: "felix", grid: "vanessa", monitoring: "malte", capex: "dimitar" };
-      return map[cat] || "malte";
-    };
+    const routeCat = (cat, verdict, lossEur) => recommendCat(cat, verdict, lossEur, EMPLOYEES);
 
     const inverters = [];
     let k = 0;
@@ -486,6 +532,9 @@ SolarTwin Plant Analyst`;
   const API = "/api";  // same origin — FastAPI serves both frontend and API
 
   try {
+    // Live employee directory (falls back to EMPLOYEES_FALLBACK on failure).
+    await refreshPeople();
+
     // Parallel fetch of the three fast endpoints for both plants
     const [plantRespA, mapItemsA, findingsRespA, plantRespB, mapItemsB, findingsRespB] = await Promise.all([
       fetch(`${API}/plant?plant=A`   ).then(r => { if (!r.ok) throw new Error(`/plant?plant=A ${r.status}`);    return r.json(); }),
@@ -532,12 +581,9 @@ SolarTwin Plant Analyst`;
       employees: EMPLOYEES,
       empById,
       draftEmail,
-      routeCat: (cat, verdict, lossEur) => {
-        if (lossEur > 9000 && verdict === "Replace") return "dimitar";
-        if (lossEur > 14000) return "cayen";
-        const m = { hardware: "raphael", performance: "sonja", safety: "frederik", mv: "felix", grid: "vanessa", monitoring: "malte" };
-        return m[cat] || "malte";
-      },
+      routeCat: (cat, verdict, lossEur) => recommendCat(cat, verdict, lossEur, EMPLOYEES),
+      recommendCat,
+      refreshPeople,
       fmt,
       sevOrder: SEV_ORDER,
       sevColor:  SEV_COLOR,
@@ -610,12 +656,7 @@ SolarTwin Plant Analyst`;
       { t: "Grid curtailment mismatch", cat: "grid",      root: "Active-power cap applied 240h beyond DSO schedule.", act: "Reconcile curtailment log with DSO.", verdict: "Monitor" },
       { t: "End-of-life capacitor bank", cat: "hardware", root: "DC-link capacitance down 22%; ripple rising.", act: "Replace inverter at next maintenance window.", verdict: "Replace" },
     ];
-    const routeCatFn = (cat, verdict, lossEur) => {
-      if (lossEur > 9000 && verdict === "Replace") return "dimitar";
-      if (lossEur > 14000) return "cayen";
-      const m = { hardware: "raphael", performance: "sonja", safety: "frederik", mv: "felix", grid: "vanessa", monitoring: "malte" };
-      return m[cat] || "malte";
-    };
+    const routeCatFn = (cat, verdict, lossEur) => recommendCat(cat, verdict, lossEur, EMPLOYEES);
     const inverters = [];
     let k = 0;
     for (let g = 0; g < groups.length; g++) {
@@ -675,7 +716,7 @@ SolarTwin Plant Analyst`;
     const plantB = buildSyntheticPlantB();
     return {
       plants: { A: plantA, B: plantB }, employees: EMPLOYEES, empById, draftEmail,
-      routeCat: routeCatFn, fmt, sevOrder: SEV_ORDER, sevColor: SEV_COLOR, sevLabel: SEV_LABEL,
+      routeCat: routeCatFn, recommendCat, refreshPeople, fmt, sevOrder: SEV_ORDER, sevColor: SEV_COLOR, sevLabel: SEV_LABEL,
       fetchTimeline: async () => null,
       mapTimeline,
     };
