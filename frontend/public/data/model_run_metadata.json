@@ -14,7 +14,7 @@
     2018
   ],
   "event_semantics": "events.json contains acute outages and acute faults only; chronic degradation is exported in degradation_trends.json.",
-  "generated_at": "2026-06-13T05:20:40+00:00",
+  "generated_at": "2026-06-13T07:07:30+00:00",
   "rolling_layer_enabled": true,
   "rows_used": 17641185,
   "score_years": [
@@ -34,9 +34,9 @@
       "watch": 0.97
     },
     "lost_kwh_per_kwp": {
-      "critical_high": 59.4242,
-      "warning_med": 48.6284,
-      "watch_low": 35.8913
+      "critical_high": 960.635,
+      "warning_med": 645.7964,
+      "watch_low": 496.6981
     }
   },
   "source_run_dir": "outputs/current_model_run",
