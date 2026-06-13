@@ -179,3 +179,19 @@ Smoke validation completed:
 - `python scripts/train_solar_twin.py --max-rows-per-year 15000 --score-years 2019`
 - `python scripts/demo_synthetic_step_drop.py`
 - `python scripts/train_solar_twin.py --max-inverters 8 --score-years 2019`
+
+## Event vs Degradation Export Fix
+
+The yearly frontend table was too dramatic because `fast_degradation` was exported as one anomaly event per inverter-day. That made broad 2019-2020 rolling-factor behavior look like thousands of independent failures.
+
+Decision:
+- `events.json` and `anomaly_events.csv` should contain acute outages and acute faults only.
+- Chronic rolling health behavior belongs in `degradation_trends.csv` and `frontend/public/data/degradation_trends.json`.
+- Frontend wording should distinguish acute events from degradation trend state.
+
+Full rerun after the fix:
+- `selected_model = exogenous_only`
+- `rows_used = 17,641,185`
+- `events.json` now has 377 acute events total
+- 2019 acute event count is 270 critical outages and 15 warning acute faults
+- 2019 chronic trend state is still visible separately as 8,566 fast-degradation days in `degradation_trends.json`

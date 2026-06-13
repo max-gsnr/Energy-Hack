@@ -90,6 +90,19 @@ REQUIRED_COLUMNS = {
         "sustained_underperformance",
         "event_type",
     },
+    "degradation_trends.csv": {
+        "year",
+        "inverter_id",
+        "inverter_group",
+        "days_observed",
+        "median_factor",
+        "median_relative_factor",
+        "min_factor",
+        "min_relative_factor",
+        "fast_degradation_days",
+        "slow_degradation_days",
+        "lost_kwh",
+    },
     "rolling_factor_history.csv": {
         "inverter_id",
         "date",
@@ -144,6 +157,7 @@ class ExportData:
     rankings: pd.DataFrame
     daily: pd.DataFrame
     events: pd.DataFrame
+    degradation_trends: pd.DataFrame
     rolling: pd.DataFrame
     metadata: pd.DataFrame
 
@@ -214,6 +228,7 @@ def load_inputs(input_dir: Path) -> ExportData:
         rankings=read_csv(input_dir, "inverter_rankings.csv"),
         daily=read_csv(input_dir, "daily_inverter_scores.csv"),
         events=read_csv(input_dir, "anomaly_events.csv"),
+        degradation_trends=read_csv(input_dir, "degradation_trends.csv"),
         rolling=read_csv(input_dir, "rolling_factor_history.csv"),
         metadata=read_csv(input_dir, "inverter_metadata.csv"),
     )
@@ -287,7 +302,7 @@ def event_severity(
         return "critical"
     if event_type == "acute_fault" or loss >= lost_thresholds["warning_med"]:
         return "warning"
-    if event_type in {"slow_degradation", "fast_degradation"} or loss >= lost_thresholds["watch_low"]:
+    if loss >= lost_thresholds["watch_low"]:
         return "watch"
     return "normal"
 
@@ -358,6 +373,12 @@ def build_plant_summary(plant_daily: pd.DataFrame) -> dict[str, Any]:
         "total_overperformance_offset_kwh": finite_or_none(total_overperformance, 2),
         "lost_kwh_semantics": "performance loss excluding curtailment",
         "reconciliation": "actual_kwh + lost_kwh + curtailment_kwh - overperformance_offset_kwh = expected_kwh",
+        "sample_count_semantics": {
+            "strong_samples": "5-minute acute residual flags.",
+            "outage_samples": "5-minute outage flags.",
+            "slow_degradation_samples": "5-minute chronic trend-state rows, not independent events.",
+            "fast_degradation_samples": "5-minute chronic trend-state rows, not independent events.",
+        },
         "yearly": yearly_rows,
     }
 
@@ -445,7 +466,8 @@ def build_inverter_map(rankings: list[dict[str, Any]]) -> list[dict[str, Any]]:
 
 
 def build_events(events: pd.DataFrame, metadata: pd.DataFrame, thresholds: dict[str, Any]) -> list[dict[str, Any]]:
-    merged = events.merge(metadata[["inverter_id", "pdc_kwp"]], on="inverter_id", how="left")
+    acute = events[events["event_type"].isin(["outage", "acute_fault"])].copy()
+    merged = acute.merge(metadata[["inverter_id", "pdc_kwp"]], on="inverter_id", how="left")
     rows = []
     for _, row in merged.sort_values(["lost_kwh", "date"], ascending=[False, True]).iterrows():
         pdc_kwp = finite_or_none(row.get("pdc_kwp"), 4)
@@ -481,11 +503,88 @@ def build_events(events: pd.DataFrame, metadata: pd.DataFrame, thresholds: dict[
     return rows
 
 
+def build_degradation_trends(trends: pd.DataFrame) -> dict[str, Any]:
+    frame = trends.copy()
+    yearly = (
+        frame.groupby("year", sort=True)
+        .agg(
+            inverters_observed=("inverter_id", "nunique"),
+            median_factor=("median_factor", "median"),
+            median_relative_factor=("median_relative_factor", "median"),
+            min_factor=("min_factor", "min"),
+            min_relative_factor=("min_relative_factor", "min"),
+            inverter_years_with_fast_degradation=(
+                "fast_degradation_days",
+                lambda s: int((s > 0).sum()),
+            ),
+            inverter_years_with_slow_degradation=(
+                "slow_degradation_days",
+                lambda s: int((s > 0).sum()),
+            ),
+            fast_degradation_days=("fast_degradation_days", "sum"),
+            slow_degradation_days=("slow_degradation_days", "sum"),
+            lost_kwh=("lost_kwh", "sum"),
+        )
+        .reset_index()
+    )
+    yearly_rows = []
+    for _, row in yearly.iterrows():
+        yearly_rows.append(
+            {
+                "year": int(row["year"]),
+                "inverters_observed": int(row["inverters_observed"]),
+                "median_factor": finite_or_none(row["median_factor"], 4),
+                "median_relative_factor": finite_or_none(row["median_relative_factor"], 4),
+                "min_factor": finite_or_none(row["min_factor"], 4),
+                "min_relative_factor": finite_or_none(row["min_relative_factor"], 4),
+                "inverter_years_with_fast_degradation": int(
+                    row["inverter_years_with_fast_degradation"]
+                ),
+                "inverter_years_with_slow_degradation": int(
+                    row["inverter_years_with_slow_degradation"]
+                ),
+                "fast_degradation_days": int(row["fast_degradation_days"]),
+                "slow_degradation_days": int(row["slow_degradation_days"]),
+                "lost_kwh": finite_or_none(row["lost_kwh"], 2),
+            }
+        )
+
+    inverter_rows = []
+    for _, row in frame.sort_values(
+        ["year", "lost_kwh", "inverter_id"], ascending=[True, False, True]
+    ).iterrows():
+        inverter_rows.append(
+            {
+                "year": int(row["year"]),
+                "inverter_id": row["inverter_id"],
+                "inverter_group": row["inverter_group"],
+                "days_observed": int(row["days_observed"]),
+                "median_factor": finite_or_none(row["median_factor"], 4),
+                "median_relative_factor": finite_or_none(row["median_relative_factor"], 4),
+                "min_factor": finite_or_none(row["min_factor"], 4),
+                "min_relative_factor": finite_or_none(row["min_relative_factor"], 4),
+                "fast_degradation_days": int(row["fast_degradation_days"]),
+                "slow_degradation_days": int(row["slow_degradation_days"]),
+                "lost_kwh": finite_or_none(row["lost_kwh"], 2),
+            }
+        )
+
+    return {
+        "semantics": (
+            "Chronic rolling health-factor trend summary. These are not acute events "
+            "and should not be counted as independent failures."
+        ),
+        "yearly": yearly_rows,
+        "inverter_years": inverter_rows,
+    }
+
+
 def build_agent_context(
     run_summary: dict[str, Any],
     plant_summary: dict[str, Any],
     rankings: list[dict[str, Any]],
     events: list[dict[str, Any]],
+    degradation_trends: dict[str, Any],
     baseline_excluded: list[str],
 ) -> dict[str, Any]:
     total_lost = plant_summary["total_lost_kwh"]
@@ -540,9 +639,11 @@ def build_agent_context(
             "Unavailable values must be answered as unknown.",
             "Baseline-excluded inverters are pre-existing/anomalous-since-start candidates, not degradation-over-time claims.",
             "Use latest_factor and latest_relative_factor for health/degradation explanations.",
+            "Use degradation_trends for chronic health changes; events are acute outages or acute faults only.",
         ],
         "top_findings": top_findings,
         "top_events": events[:10],
+        "degradation_trend_summary": degradation_trends["yearly"],
         "answerable_questions": [
             "Which inverter has the highest modeled performance loss?",
             "Is the top issue pre-existing or a new acute fault?",
@@ -587,7 +688,8 @@ def build_detail_files(
                     "mean_acute_residual_z": finite_or_none(row["mean_acute_residual_z"], 2),
                     "mean_factor": finite_or_none(row["mean_factor"], 4),
                     "mean_relative_factor": finite_or_none(row["mean_relative_factor"], 4),
-                    "event_type": row["event_type"],
+                    "daily_state": row["event_type"],
+                    "is_acute_event": row["event_type"] in {"outage", "acute_fault"},
                     "strong_samples": int(row["strong_samples"]),
                     "outage_samples": int(row["outage_samples"]),
                     "error_samples": int(row["error_samples"]),
@@ -675,19 +777,21 @@ def validate_outputs(
     if not rel_close(ranking_lost, total_lost):
         raise AssertionError("Ranking lost kWh does not reconcile to plant lost kWh")
 
-    if rankings[0]["inverter_id"] != "INV 01.07.047":
-        raise AssertionError("Top-ranked inverter is not INV 01.07.047")
-    if not rankings[0]["baseline_excluded"]:
-        raise AssertionError("INV 01.07.047 should be baseline_excluded")
+    ranking_by_id = {item["inverter_id"]: item for item in rankings}
+    if "INV 01.07.047" in ranking_by_id:
+        if rankings[0]["inverter_id"] != "INV 01.07.047":
+            raise AssertionError("Top-ranked inverter is not INV 01.07.047")
+        if not ranking_by_id["INV 01.07.047"]["baseline_excluded"]:
+            raise AssertionError("INV 01.07.047 should be baseline_excluded")
 
-    finding = next(
-        item for item in agent_context["top_findings"] if item["inverter_id"] == "INV 01.07.047"
-    )
-    text = json.dumps(finding).lower()
-    if "anomalous since start" not in text and "pre-existing" not in text:
-        raise AssertionError("INV 01.07.047 finding lacks pre-existing/anomalous-since-start language")
-    if "degraded over time" in text:
-        raise AssertionError("INV 01.07.047 finding incorrectly says degraded over time")
+        finding = next(
+            item for item in agent_context["top_findings"] if item["inverter_id"] == "INV 01.07.047"
+        )
+        text = json.dumps(finding).lower()
+        if "anomalous since start" not in text and "pre-existing" not in text:
+            raise AssertionError("INV 01.07.047 finding lacks pre-existing/anomalous-since-start language")
+        if "degraded over time" in text:
+            raise AssertionError("INV 01.07.047 finding incorrectly says degraded over time")
 
     for payload_name in [
         "model_run_metadata.json",
@@ -695,6 +799,7 @@ def validate_outputs(
         "inverter_rankings.json",
         "inverter_map.json",
         "events.json",
+        "degradation_trends.json",
         "agent_context.json",
     ]:
         with (output_dir / payload_name).open("r", encoding="utf-8") as f:
@@ -724,6 +829,7 @@ def export_payloads(input_dir: Path, output_dir: Path) -> None:
     rankings = enrich_rankings(data.rankings, data.metadata, factors, baseline_excluded, thresholds)
     inverter_map = build_inverter_map(rankings)
     events = build_events(data.events, data.metadata, thresholds)
+    degradation_trends = build_degradation_trends(data.degradation_trends)
 
     selected_model = data.run_summary["selected_model"]
     calibration_key = (
@@ -749,9 +855,15 @@ def export_payloads(input_dir: Path, output_dir: Path) -> None:
         ),
         "baseline_excluded_inverters": sorted(baseline_excluded),
         "severity_thresholds": thresholds,
+        "event_semantics": "events.json contains acute outages and acute faults only; chronic degradation is exported in degradation_trends.json.",
     }
     agent_context = build_agent_context(
-        data.run_summary, plant_summary, rankings, events, sorted(baseline_excluded)
+        data.run_summary,
+        plant_summary,
+        rankings,
+        events,
+        degradation_trends,
+        sorted(baseline_excluded),
     )
 
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -761,6 +873,7 @@ def export_payloads(input_dir: Path, output_dir: Path) -> None:
     write_json(output_dir / "inverter_rankings.json", rankings)
     write_json(output_dir / "inverter_map.json", inverter_map)
     write_json(output_dir / "events.json", events)
+    write_json(output_dir / "degradation_trends.json", degradation_trends)
     write_json(output_dir / "agent_context.json", agent_context)
     build_detail_files(output_dir, rankings, data.daily, data.rolling, events)
     validate_outputs(output_dir, plant_summary, rankings, inverter_map, agent_context)

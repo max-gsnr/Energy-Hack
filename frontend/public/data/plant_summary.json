@@ -1,6 +1,12 @@
 {
   "lost_kwh_semantics": "performance loss excluding curtailment",
   "reconciliation": "actual_kwh + lost_kwh + curtailment_kwh - overperformance_offset_kwh = expected_kwh",
+  "sample_count_semantics": {
+    "fast_degradation_samples": "5-minute chronic trend-state rows, not independent events.",
+    "outage_samples": "5-minute outage flags.",
+    "slow_degradation_samples": "5-minute chronic trend-state rows, not independent events.",
+    "strong_samples": "5-minute acute residual flags."
+  },
   "total_actual_kwh": 10594747.52,
   "total_curtailment_kwh": 625907.74,
   "total_expected_kwh": 11295684.49,

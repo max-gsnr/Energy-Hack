@@ -555,9 +555,23 @@ def summarize_outputs(frame: pd.DataFrame, config: TwinConfig) -> dict[str, pd.D
     events = daily[
         daily["sustained_underperformance"]
         | (daily["outage_samples"] > 0)
-        | (daily["fast_degradation_samples"] > 0)
-        | (daily["slow_degradation_samples"] >= config.sustained_samples_per_day)
     ].sort_values(["lost_kwh", "strong_samples"], ascending=False)
+
+    degradation_trends = daily.groupby(
+        ["year", "inverter_id", "inverter_group"], observed=True
+    ).agg(
+        days_observed=("date", "nunique"),
+        median_factor=("mean_factor", "median"),
+        median_relative_factor=("mean_relative_factor", "median"),
+        min_factor=("mean_factor", "min"),
+        min_relative_factor=("mean_relative_factor", "min"),
+        fast_degradation_days=("fast_degradation_samples", lambda s: int((s > 0).sum())),
+        slow_degradation_days=(
+            "slow_degradation_samples",
+            lambda s: int((s >= config.sustained_samples_per_day).sum()),
+        ),
+        lost_kwh=("lost_kwh", "sum"),
+    ).reset_index()
 
     sample_cols = [
         "timestamp",
@@ -588,6 +602,7 @@ def summarize_outputs(frame: pd.DataFrame, config: TwinConfig) -> dict[str, pd.D
         "plant_daily_scores": plant_daily,
         "inverter_rankings": rankings,
         "anomaly_events": events,
+        "degradation_trends": degradation_trends,
         "top_anomaly_samples": top_samples,
     }
 

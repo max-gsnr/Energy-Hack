@@ -14,11 +14,105 @@
     "INV 01.08.052",
     "INV 01.08.059"
   ],
+  "degradation_trend_summary": [
+    {
+      "fast_degradation_days": 8566,
+      "inverter_years_with_fast_degradation": 64,
+      "inverter_years_with_slow_degradation": 20,
+      "inverters_observed": 65,
+      "lost_kwh": 67519.9,
+      "median_factor": 0.9946,
+      "median_relative_factor": 1.0,
+      "min_factor": 0.5,
+      "min_relative_factor": 0.4628,
+      "slow_degradation_days": 99,
+      "year": 2019
+    },
+    {
+      "fast_degradation_days": 4612,
+      "inverter_years_with_fast_degradation": 22,
+      "inverter_years_with_slow_degradation": 2,
+      "inverters_observed": 65,
+      "lost_kwh": 5926.76,
+      "median_factor": 1.0,
+      "median_relative_factor": 1.0,
+      "min_factor": 0.7254,
+      "min_relative_factor": 0.7433,
+      "slow_degradation_days": 13,
+      "year": 2020
+    },
+    {
+      "fast_degradation_days": 0,
+      "inverter_years_with_fast_degradation": 0,
+      "inverter_years_with_slow_degradation": 0,
+      "inverters_observed": 65,
+      "lost_kwh": 250.29,
+      "median_factor": 1.0,
+      "median_relative_factor": 1.0,
+      "min_factor": 0.8943,
+      "min_relative_factor": 0.9414,
+      "slow_degradation_days": 0,
+      "year": 2021
+    },
+    {
+      "fast_degradation_days": 0,
+      "inverter_years_with_fast_degradation": 0,
+      "inverter_years_with_slow_degradation": 0,
+      "inverters_observed": 65,
+      "lost_kwh": 575.11,
+      "median_factor": 1.0,
+      "median_relative_factor": 1.0,
+      "min_factor": 0.8943,
+      "min_relative_factor": 0.9414,
+      "slow_degradation_days": 0,
+      "year": 2022
+    },
+    {
+      "fast_degradation_days": 0,
+      "inverter_years_with_fast_degradation": 0,
+      "inverter_years_with_slow_degradation": 0,
+      "inverters_observed": 65,
+      "lost_kwh": 522.27,
+      "median_factor": 1.0,
+      "median_relative_factor": 1.0,
+      "min_factor": 0.8943,
+      "min_relative_factor": 0.9414,
+      "slow_degradation_days": 0,
+      "year": 2023
+    },
+    {
+      "fast_degradation_days": 0,
+      "inverter_years_with_fast_degradation": 0,
+      "inverter_years_with_slow_degradation": 0,
+      "inverters_observed": 65,
+      "lost_kwh": 172.91,
+      "median_factor": 1.0,
+      "median_relative_factor": 1.0,
+      "min_factor": 1.0,
+      "min_relative_factor": 1.0,
+      "slow_degradation_days": 0,
+      "year": 2024
+    },
+    {
+      "fast_degradation_days": 0,
+      "inverter_years_with_fast_degradation": 0,
+      "inverter_years_with_slow_degradation": 0,
+      "inverters_observed": 65,
+      "lost_kwh": 61.98,
+      "median_factor": 1.0,
+      "median_relative_factor": 1.0,
+      "min_factor": 1.0,
+      "min_relative_factor": 1.0,
+      "slow_degradation_days": 0,
+      "year": 2025
+    }
+  ],
   "guardrails": [
     "Every numeric claim in this context is copied from exported model-run values.",
     "Unavailable values must be answered as unknown.",
     "Baseline-excluded inverters are pre-existing/anomalous-since-start candidates, not degradation-over-time claims.",
-    "Use latest_factor and latest_relative_factor for health/degradation explanations."
+    "Use latest_factor and latest_relative_factor for health/degradation explanations.",
+    "Use degradation_trends for chronic health changes; events are acute outages or acute faults only."
   ],
   "model_summary": "Selected model is exogenous_only, trained on [2017] and calibrated on [2018].",
   "plant_headline": "Plant A has 75029.23 kWh modeled performance loss excluding curtailment; estimated curtailment bucket is 625907.74 kWh.",
