@@ -152,7 +152,9 @@ def select_inverters(max_inverters: int | None = None) -> list[InverterColumns]:
     return columns
 
 
-def _load_error_wide(inverters: list[InverterColumns]) -> pd.DataFrame:
+def _load_error_wide(
+    inverters: list[InverterColumns], timestamps: pd.Series | None = None
+) -> pd.DataFrame:
     error_cols = []
     for inv in inverters:
         error_cols.append(f"{inv.inverter_id} / Error")
@@ -161,6 +163,9 @@ def _load_error_wide(inverters: list[InverterColumns]) -> pd.DataFrame:
     cols = [col for col in error_cols if col in available]
     errors = pd.read_parquet(PLANT_A_ERRORS, columns=cols)
     errors["timestamp"] = pd.to_datetime(errors.index, errors="coerce")
+    if timestamps is not None:
+        keep = pd.Index(pd.to_datetime(timestamps, errors="coerce"))
+        errors = errors[errors["timestamp"].isin(keep)].copy()
     return errors.reset_index(drop=True)
 
 
@@ -171,6 +176,8 @@ def load_wide_frame(inverters: list[InverterColumns], include_dc: bool = True) -
         cols += [inv.i_dc for inv in inverters if inv.i_dc]
     df = pd.read_parquet(PLANT_A_MAIN, columns=cols)
     df = df.rename(columns={source: target for target, source in ENV_COLUMNS.items()})
+    float_cols = df.select_dtypes("float64").columns
+    df[float_cols] = df[float_cols].astype("float32")
     df["timestamp"] = pd.to_datetime(df.index, errors="coerce")
     return df
 
@@ -206,23 +213,21 @@ def build_long_frame(
     measured_ids = [inv.inverter_id for inv in inverters]
     meta = load_system_overview(measured_ids=measured_ids)
     wide = add_time_features(load_wide_frame(inverters, include_dc=include_dc))
+    wide = wide[(wide["irradiation"] > 100) & (wide["sun_altitude"] > 8)].copy()
     if max_rows_per_year and max_rows_per_year > 0:
-        daylight_wide = wide[
-            (wide["irradiation"] > 100) & (wide["sun_altitude"] > 8)
-        ].copy()
         wide_rows_per_year = max(
             1, math.ceil((max_rows_per_year / max(len(inverters), 1)) * 1.6)
         )
         sampled_wide = []
-        for _, frame in daylight_wide.groupby("year"):
+        for _, frame in wide.groupby("year"):
             sampled_wide.append(
                 frame.sample(min(len(frame), wide_rows_per_year), random_state=random_state)
             )
         wide = pd.concat(sampled_wide, ignore_index=True)
-    errors = _load_error_wide(inverters) if include_errors else None
-    if include_errors and errors is not None and len(errors) != len(wide):
+    errors = _load_error_wide(inverters, wide["timestamp"]) if include_errors else None
+    if include_errors and errors is not None:
         errors = (
-            wide[["timestamp"]]
+            wide[["timestamp"]].reset_index(drop=True)
             .merge(errors.drop_duplicates("timestamp"), on="timestamp", how="left")
         )
 
@@ -247,6 +252,14 @@ def build_long_frame(
     ]
     parts = []
     meta_by_id = meta.set_index("inverter_id")
+    required = [
+        "irradiation",
+        "sun_altitude",
+        "ambient_temperature",
+        "module_temperature",
+        "p_norm",
+        "pdc_kwp",
+    ]
     for inv in inverters:
         part = wide[base_cols + [inv.p_ac]].rename(columns={inv.p_ac: "p_ac_kw"}).copy()
         part["inverter_id"] = inv.inverter_id
@@ -264,33 +277,25 @@ def build_long_frame(
         for col in meta.columns:
             if col != "inverter_id":
                 part[col] = meta_row[col]
+        part["pdc_kwp"] = part["pdc_kwp"].astype("float64")
+        part["p_norm"] = part["p_ac_kw"] / part["pdc_kwp"]
+        if include_dc and {"u_dc_v", "i_dc_a"}.issubset(part.columns):
+            part["p_dc_kw"] = part["u_dc_v"] * part["i_dc_a"] / 1000
+            part["efficiency_proxy"] = part["p_ac_kw"] / part["p_dc_kw"].replace(0, np.nan)
+            part["dc_norm"] = part["p_dc_kw"] / part["pdc_kwp"]
+        part = part[
+            (part["irradiation"] > 100)
+            & (part["sun_altitude"] > 8)
+            & part["p_norm"].notna()
+            & np.isfinite(part["p_norm"])
+            & (part["p_norm"] >= 0)
+            & (part["p_norm"] < 1.3)
+        ].dropna(subset=required)
         parts.append(part)
 
     long = pd.concat(parts, ignore_index=True)
-    long["p_norm"] = long["p_ac_kw"] / long["pdc_kwp"]
-    if include_dc and {"u_dc_v", "i_dc_a"}.issubset(long.columns):
-        long["p_dc_kw"] = long["u_dc_v"] * long["i_dc_a"] / 1000
-        long["efficiency_proxy"] = long["p_ac_kw"] / long["p_dc_kw"].replace(0, np.nan)
-        long["dc_norm"] = long["p_dc_kw"] / long["pdc_kwp"]
-
-    long = long[
-        (long["irradiation"] > 100)
-        & (long["sun_altitude"] > 8)
-        & long["p_norm"].notna()
-        & np.isfinite(long["p_norm"])
-        & (long["p_norm"] >= 0)
-        & (long["p_norm"] < 1.3)
-    ].copy()
-
-    required = [
-        "irradiation",
-        "sun_altitude",
-        "ambient_temperature",
-        "module_temperature",
-        "p_norm",
-        "pdc_kwp",
-    ]
-    long = long.dropna(subset=required)
+    for col in ["inverter_id", "inverter_group", "module_type", "manufacturer", "capacity_band"]:
+        long[col] = long[col].astype("category")
 
     if max_rows_per_year and max_rows_per_year > 0 and len(long) > max_rows_per_year * long["year"].nunique():
         sampled = []

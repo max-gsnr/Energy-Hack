@@ -271,6 +271,11 @@ def apply_rolling_layer(
     roll = roll.copy()
     if not roll.empty:
         roll["date_dt"] = pd.to_datetime(roll["date"])
+    if isinstance(out["inverter_id"].dtype, pd.CategoricalDtype):
+        inverter_dtype = out["inverter_id"].dtype
+        all_dates["inverter_id"] = all_dates["inverter_id"].astype(inverter_dtype)
+        if not roll.empty:
+            roll["inverter_id"] = roll["inverter_id"].astype(inverter_dtype)
     all_dates = all_dates.sort_values(["inverter_id", "date_dt"])
     roll = roll.sort_values(["inverter_id", "date_dt"])
     factor_cols = [
@@ -286,7 +291,7 @@ def apply_rolling_layer(
     ]
     if rolling_enabled and not roll.empty:
         factor_daily = []
-        for inverter_id, dates in all_dates.groupby("inverter_id"):
+        for inverter_id, dates in all_dates.groupby("inverter_id", observed=True):
             inv_roll = roll[roll["inverter_id"] == inverter_id]
             merged = pd.merge_asof(
                 dates.sort_values("date_dt"),
