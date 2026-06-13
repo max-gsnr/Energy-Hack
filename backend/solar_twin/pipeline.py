@@ -43,7 +43,7 @@ class TwinConfig:
     factor_trend_lookback_days: int = 180
 
 
-def _model(numeric: list[str], categorical: list[str]) -> Pipeline:
+def _model(numeric: list[str], categorical: list[str], random_state: int) -> Pipeline:
     preprocessor = ColumnTransformer(
         transformers=[
             ("num", "passthrough", numeric),
@@ -64,7 +64,7 @@ def _model(numeric: list[str], categorical: list[str]) -> Pipeline:
         learning_rate=0.06,
         max_leaf_nodes=31,
         l2_regularization=0.05,
-        random_state=42,
+        random_state=random_state,
     )
     return Pipeline([("preprocess", preprocessor), ("model", regressor)])
 
@@ -74,6 +74,7 @@ def _fit_predict(
     train_years: tuple[int, ...],
     eval_years: tuple[int, ...],
     include_module_temperature: bool,
+    random_state: int,
 ):
     numeric, categorical = feature_columns(include_module_temperature)
     features = numeric + categorical
@@ -82,7 +83,9 @@ def _fit_predict(
         & (~frame["curtailment_active"])
         & (~frame["baseline_excluded"])
     ].copy()
-    model = _model(numeric, categorical)
+    if include_module_temperature:
+        train = train.dropna(subset=["module_temperature", "temp_delta"])
+    model = _model(numeric, categorical, random_state=random_state)
     model.fit(train[features], train["p_norm"])
 
     rows = []
@@ -111,8 +114,8 @@ def vet_baseline(frame: pd.DataFrame, train_years: tuple[int, ...]) -> tuple[pd.
         & (~frame["curtailment_active"])
         & (frame["irradiation"] > 200)
     ].copy()
-    counts = baseline.groupby("inverter_id").size().rename("sample_count")
-    stats = baseline.groupby("inverter_id").agg(
+    counts = baseline.groupby("inverter_id", observed=True).size().rename("sample_count")
+    stats = baseline.groupby("inverter_id", observed=True).agg(
         median_p_norm=("p_norm", "median"),
         std_p_norm=("p_norm", "std"),
         mean_p_norm=("p_norm", "mean"),
@@ -181,13 +184,13 @@ def calibrate_sigma(
         cal = cal[~cal["warmup"]].copy()
     cal = _add_sigma_bins(cal)
     sigma = (
-        cal.groupby(["inverter_id", "sigma_key"])[residual_col]
+        cal.groupby(["inverter_id", "sigma_key"], observed=True)[residual_col]
         .std()
         .reset_index(name=sigma_col)
     )
     sigma[sigma_col] = sigma[sigma_col].clip(lower=0.015)
     fallback = (
-        cal.groupby("sigma_key")[residual_col].std().reset_index(name=fallback_col)
+        cal.groupby("sigma_key", observed=True)[residual_col].std().reset_index(name=fallback_col)
     )
     fallback[fallback_col] = fallback[fallback_col].clip(lower=0.02)
     return sigma.merge(fallback, on="sigma_key", how="left")
@@ -349,26 +352,42 @@ def degradation_summary(
     scored: pd.DataFrame, rolling_history: pd.DataFrame, config: TwinConfig
 ) -> pd.DataFrame:
     score = scored[scored["year"].isin(config.score_years)].copy()
-    score["lost_kw"] = np.maximum(
-        0, score["p_pred_norm"] * score["pdc_kwp"] - score["p_ac_kw"]
-    )
+    score["lost_kw"] = np.maximum(0, score["p_pred_norm"] * score["pdc_kwp"] - score["p_ac_kw"])
     score.loc[score["curtailment_active"], "lost_kw"] = 0
     score["lost_kwh"] = score["lost_kw"] * (5 / 60)
-    lost = score.groupby("inverter_id", as_index=False).agg(
+    lost = score.groupby("inverter_id", as_index=False, observed=True).agg(
         total_frozen_lost_kwh=("lost_kwh", "sum")
     )
-    latest = (
-        rolling_history.sort_values(["inverter_id", "date"])
-        .groupby("inverter_id", as_index=False)
-        .tail(1)
-    )
-    latest = latest.rename(
-        columns={
-            "factor": "latest_factor",
-            "relative_factor": "latest_relative_factor",
-            "factor_slope_pct_yr": "degradation_rate_pct_per_year",
-        }
-    )
+    history = rolling_history.sort_values(["inverter_id", "date"]).copy()
+    usable = history[~history["warmup"]].copy()
+    if usable.empty:
+        usable = history.copy()
+
+    recent_rows = []
+    recent_points = 30
+    for inverter_id, group in usable.groupby("inverter_id", observed=True):
+        recent = group.tail(recent_points).copy()
+        slope = np.nan
+        if len(recent) >= 3:
+            dates = pd.to_datetime(recent["date"])
+            x = (dates - dates.min()).dt.days.to_numpy(dtype=float)
+            y = recent["factor"].to_numpy(dtype=float)
+            if np.ptp(x) > 0 and np.isfinite(y).all():
+                slope = float(np.polyfit(x, y, 1)[0] * 365 * 100)
+        if not np.isfinite(slope):
+            slope = float(recent["factor_slope_pct_yr"].dropna().tail(1).iloc[0]) if recent["factor_slope_pct_yr"].notna().any() else 0.0
+        recent_rows.append(
+            {
+                "inverter_id": inverter_id,
+                "date": recent["date"].iloc[-1],
+                "latest_factor": float(recent["factor"].median()),
+                "latest_relative_factor": float(recent["relative_factor"].median()),
+                "degradation_rate_pct_per_year": slope,
+                "fast_degradation": bool(slope < config.fast_degradation_threshold),
+                "recent_factor_points": int(len(recent)),
+            }
+        )
+    latest = pd.DataFrame(recent_rows)
     summary = latest.merge(lost, on="inverter_id", how="left")
     summary["total_frozen_lost_kwh"] = summary["total_frozen_lost_kwh"].fillna(0.0)
     summary = summary.sort_values(
@@ -385,6 +404,7 @@ def degradation_summary(
             "latest_relative_factor",
             "degradation_rate_pct_per_year",
             "fast_degradation",
+            "recent_factor_points",
             "total_frozen_lost_kwh",
         ]
     ]
@@ -392,6 +412,11 @@ def degradation_summary(
 
 def summarize_outputs(frame: pd.DataFrame, config: TwinConfig) -> dict[str, pd.DataFrame]:
     scored = frame.copy()
+    scored["expected_kwh"] = scored["p_pred_norm"] * scored["pdc_kwp"] * (5 / 60)
+    scored["current_expected_kwh"] = (
+        scored["current_expected_norm"] * scored["pdc_kwp"] * (5 / 60)
+    )
+    scored["actual_kwh"] = scored["p_ac_kw"] * (5 / 60)
     scored["lost_kw"] = np.maximum(
         0, scored["p_pred_norm"] * scored["pdc_kwp"] - scored["p_ac_kw"]
     )
@@ -444,10 +469,10 @@ def summarize_outputs(frame: pd.DataFrame, config: TwinConfig) -> dict[str, pd.D
         default="normal",
     )
 
-    daily = scored.groupby(["date", "year", "inverter_id", "inverter_group"]).agg(
-        expected_kwh=("p_pred_norm", lambda s: float(np.sum(s * scored.loc[s.index, "pdc_kwp"] * (5 / 60)))),
-        current_expected_kwh=("current_expected_norm", lambda s: float(np.sum(s * scored.loc[s.index, "pdc_kwp"] * (5 / 60)))),
-        actual_kwh=("p_ac_kw", lambda s: float(np.sum(s * (5 / 60)))),
+    daily = scored.groupby(["date", "year", "inverter_id", "inverter_group"], observed=True).agg(
+        expected_kwh=("expected_kwh", "sum"),
+        current_expected_kwh=("current_expected_kwh", "sum"),
+        actual_kwh=("actual_kwh", "sum"),
         lost_kwh=("lost_kwh", "sum"),
         mean_residual_z=("residual_z", "mean"),
         min_residual_z=("residual_z", "min"),
@@ -484,7 +509,7 @@ def summarize_outputs(frame: pd.DataFrame, config: TwinConfig) -> dict[str, pd.D
         default="normal",
     )
 
-    monthly = scored.groupby(["year", "month", "inverter_id", "inverter_group"]).agg(
+    monthly = scored.groupby(["year", "month", "inverter_id", "inverter_group"], observed=True).agg(
         lost_kwh=("lost_kwh", "sum"),
         mean_residual_z=("residual_z", "mean"),
         min_residual_z=("residual_z", "min"),
@@ -501,9 +526,9 @@ def summarize_outputs(frame: pd.DataFrame, config: TwinConfig) -> dict[str, pd.D
         explained_fault_samples=("fault_explained_by_error", "sum"),
     ).reset_index()
 
-    plant_daily = scored.groupby(["date", "year"]).agg(
-        expected_kwh=("p_pred_norm", lambda s: float(np.sum(s * scored.loc[s.index, "pdc_kwp"] * (5 / 60)))),
-        actual_kwh=("p_ac_kw", lambda s: float(np.sum(s * (5 / 60)))),
+    plant_daily = scored.groupby(["date", "year"], observed=True).agg(
+        expected_kwh=("expected_kwh", "sum"),
+        actual_kwh=("actual_kwh", "sum"),
         lost_kwh=("lost_kwh", "sum"),
         strong_samples=("strong_anomaly", "sum"),
         outage_samples=("outage", "sum"),
@@ -513,7 +538,7 @@ def summarize_outputs(frame: pd.DataFrame, config: TwinConfig) -> dict[str, pd.D
         explained_fault_samples=("fault_explained_by_error", "sum"),
     ).reset_index()
 
-    rankings = monthly.groupby("inverter_id").agg(
+    rankings = monthly.groupby("inverter_id", observed=True).agg(
         total_lost_kwh=("lost_kwh", "sum"),
         worst_residual_z=("min_residual_z", "min"),
         worst_acute_residual_z=("min_acute_residual_z", "min"),
@@ -581,10 +606,18 @@ def run_pipeline(config: TwinConfig, output_dir: Path, artifact_dir: Path) -> di
 
     eval_years = config.calibration_years + config.score_years
     full_model, full_metrics, _ = _fit_predict(
-        frame, config.train_years, eval_years, include_module_temperature=True
+        frame,
+        config.train_years,
+        eval_years,
+        include_module_temperature=True,
+        random_state=config.random_state,
     )
     exog_model, exog_metrics, _ = _fit_predict(
-        frame, config.train_years, eval_years, include_module_temperature=False
+        frame,
+        config.train_years,
+        eval_years,
+        include_module_temperature=False,
+        random_state=config.random_state,
     )
     full_cal_mae = full_metrics[full_metrics["year"].isin(config.calibration_years)][
         "mae_norm"
