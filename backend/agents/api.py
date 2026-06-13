@@ -56,6 +56,10 @@ class ChatRequest(BaseModel):
     history: list[dict] = []
 
 
+class ChatDirectRequest(BaseModel):
+    prompt: str
+
+
 class DispatchRequest(BaseModel):
     finding_id: str
     use_llm: bool = True
@@ -97,8 +101,13 @@ def contact_list() -> list:
 
 
 @app.get("/api/findings")
-def findings(plant: str = "A", refresh: bool = False) -> dict:
+def findings(plant: str = "A", refresh: bool = False, include_normal: bool = False) -> dict:
     items = get_findings(plant_id=plant, refresh=refresh)
+    # An "anomaly" is a flagged inverter. Inverters tracking the expected
+    # degradation envelope (severity "normal") are NOT anomalies and are excluded
+    # by default so the count/list match the map. Pass include_normal=true for all.
+    if not include_normal:
+        items = [f for f in items if f.severity != "normal"]
     return {
         "plant_id": plant.upper(),
         "tariff_eur_per_kwh": config.TARIFF_EUR_PER_KWH,
@@ -142,6 +151,26 @@ def dispatch_finding(req: DispatchRequest) -> dict:
 @app.post("/api/chat")
 def chat(req: ChatRequest) -> dict:
     return chatbot.answer(req.message, history=req.history).model_dump()
+
+
+@app.post("/api/chat-direct")
+def chat_direct(req: ChatDirectRequest) -> dict:
+    """Accept a pre-built prompt from the browser (system + grounding + history already included)
+    and pass it straight to Gemini — no extra system prompt added server-side."""
+    from backend.agents.llm import generate
+    text = generate(req.prompt, system=None, temperature=0.3)
+    if text == "__QUOTA_EXCEEDED__":
+        return {"reply": (
+            "**API quota reached.** The free-tier Gemini key has hit its daily limit (20 req/day). "
+            "The key is valid — the assistant will work again once the quota resets (midnight Pacific), "
+            "or you can swap in a paid API key in `.env`."
+        )}
+    if text:
+        return {"reply": text}
+    return {"reply": (
+        "No Gemini API key is configured. Add `GEMINI_API_KEY=<your key>` to `.env` "
+        "and restart the server to enable the SolarTwin Assistant."
+    )}
 
 
 # ── static files (JS, CSS, assets) — mounted last so /api/* routes take priority

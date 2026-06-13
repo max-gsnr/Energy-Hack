@@ -45,6 +45,10 @@ def generate(prompt: str, system: str | None = None, temperature: float = 0.3) -
         text = (resp.text or "").strip()
         return text or None
     except Exception as exc:
+        msg = str(exc)
+        if "429" in msg or "RESOURCE_EXHAUSTED" in msg:
+            logger.warning("Gemini quota exhausted: %s", exc)
+            return "__QUOTA_EXCEEDED__"
         logger.warning("Gemini generate failed: %s", exc)
         return None
 
