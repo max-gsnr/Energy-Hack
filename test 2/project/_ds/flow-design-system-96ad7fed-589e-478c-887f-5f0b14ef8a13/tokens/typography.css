@@ -1,0 +1,58 @@
+/* Flow — Typography tokens
+   One clean humanist geometric sans (Figtree) used throughout —
+   for big stat numbers/headlines AND functional UI text. */
+:root {
+  /* ── Families ───────────────────────────────────── */
+  --font-display: "Figtree", "Inter", system-ui, -apple-system, sans-serif;
+  --font-body:    "Figtree", "Inter", system-ui, -apple-system, sans-serif;
+
+  /* ── Weights ────────────────────────────────────── */
+  --weight-regular: 400;
+  --weight-medium:  500;
+  --weight-semibold:600;
+
+  /* ── Type scale (display / serif) ───────────────── */
+  --display-2xl: 64px;  /* hero stat numbers          */
+  --display-xl:  48px;  /* large stat numbers         */
+  --display-lg:  34px;  /* widget titles (serif)      */
+  --display-md:  28px;  /* page h1                    */
+
+  /* ── Type scale (body / sans) ───────────────────── */
+  --text-lg:   18px;
+  --text-base: 15px;
+  --text-sm:   13px;
+  --text-xs:   11px;   /* uppercase captions / labels */
+
+  /* ── Line-heights ───────────────────────────────── */
+  --leading-tight: 1.05;  /* display numbers   */
+  --leading-snug:  1.25;  /* headings          */
+  --leading-normal:1.5;   /* body copy         */
+
+  /* ── Letter-spacing (slight negative on large sans) */
+  --tracking-display: -0.02em;  /* tighten big numbers/headlines */
+  --tracking-tight:   -0.01em;
+  --tracking-normal:  0;
+  --tracking-caption: 0.08em;   /* uppercase captions  */
+
+  /* ── Semantic aliases ───────────────────────────── */
+  --caption-uppercase-size: var(--text-xs);
+}
+
+/* Display helper — big sans numbers/headlines, slight negative tracking */
+.t-display {
+  font-family: var(--font-display);
+  font-weight: var(--weight-medium);
+  letter-spacing: var(--tracking-display);
+  line-height: var(--leading-tight);
+  color: var(--ink-primary);
+}
+
+/* Uppercase caption used under stat numbers + as widget labels */
+.t-caption-uppercase {
+  font-family: var(--font-body);
+  font-weight: var(--weight-semibold);
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-caption);
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}

@@ -1,0 +1,6 @@
+/* Flow — Webfonts.
+   Figtree (humanist geometric sans) used throughout — for display
+   stat numbers/headlines AND body UI text. Loaded from Google Fonts.
+   NOTE: served from the Google Fonts CDN rather than self-hosted
+   binaries — flag to the team if offline / self-hosted files are needed. */
+@import url("https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap");

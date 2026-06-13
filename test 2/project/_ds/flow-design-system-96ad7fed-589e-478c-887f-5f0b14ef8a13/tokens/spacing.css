@@ -1,0 +1,34 @@
+/* Flow — Spacing & radius tokens. 4px base grid. */
+:root {
+  /* ── Spacing scale (4px base) ───────────────────── */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;  /* sm  */
+  --space-4:  16px;  /* md  */
+  --space-6:  24px;  /* lg — default widget padding */
+  --space-8:  32px;  /* xl  */
+  --space-12: 48px;  /* section gap */
+
+  /* ── Corner radii ───────────────────────────────── */
+  --radius-sm:   4px;   /* heatmap cells, small badges */
+  --radius-md:   8px;   /* buttons, inputs             */
+  --radius-lg:   12px;  /* widgets / inset cards       */
+  --radius-xl:   16px;  /* outer surfaces              */
+  --radius-2xl:  24px;  /* the main content panel      */
+  --radius-pill: 9999px;
+
+  /* ── Elevation ──────────────────────────────────── */
+  /* Dashboard widgets are FLAT — no drop shadows.
+     These are reserved for floating UI only (dialogs, menus, toasts). */
+  --shadow-none: none;
+  --shadow-pop:  0 8px 28px -10px rgba(26,26,26,.18);
+  --shadow-overlay: 0 20px 60px -16px rgba(26,26,26,.28);
+
+  /* ── Motion (GSAP-aligned) ──────────────────────── */
+  --ease-out-power3: cubic-bezier(.215,.61,.355,1); /* @kind other */
+  --ease-out-expo:   cubic-bezier(.19,1,.22,1);     /* @kind other */
+  --ease-in-power2:  cubic-bezier(.55,.085,.68,.53);/* @kind other */
+  --dur-fast: .2s; /* @kind other */
+  --dur-mid:  .4s; /* @kind other */
+  --dur-slow: .6s; /* @kind other */
+}

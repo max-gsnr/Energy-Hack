@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SolarTwin — O&M Intelligence</title>
+
+<link rel="stylesheet" href="_ds/flow-design-system-96ad7fed-589e-478c-887f-5f0b14ef8a13/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/flow-design-system-96ad7fed-589e-478c-887f-5f0b14ef8a13/tokens/colors.css">
+<link rel="stylesheet" href="_ds/flow-design-system-96ad7fed-589e-478c-887f-5f0b14ef8a13/tokens/typography.css">
+<link rel="stylesheet" href="_ds/flow-design-system-96ad7fed-589e-478c-887f-5f0b14ef8a13/tokens/spacing.css">
+<link rel="stylesheet" href="_ds/flow-design-system-96ad7fed-589e-478c-887f-5f0b14ef8a13/tokens/base.css">
+<link rel="stylesheet" href="_ds/flow-design-system-96ad7fed-589e-478c-887f-5f0b14ef8a13/styles.css">
+
+<style>
+  :root { --sev-critical: #c0473e; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%; background: var(--canvas); font-family: var(--font-body); color: var(--ink-secondary); -webkit-font-smoothing: antialiased; }
+  body { overflow: auto; }
+  #app { min-width: 1180px; height: 100vh; }
+  button { font-family: var(--font-body); }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-thumb { background: color-mix(in oklab, var(--ink-muted) 36%, transparent); border-radius: 6px; border: 3px solid transparent; background-clip: content-box; }
+  ::-webkit-scrollbar-thumb:hover { background: color-mix(in oklab, var(--ink-muted) 55%, transparent); background-clip: content-box; }
+  ::-webkit-scrollbar-track { background: transparent; }
+
+  .row-hover:hover { background: var(--surface-soft); }
+  .icon-btn:hover { filter: brightness(0.97); border-color: color-mix(in oklab, var(--ink-muted) 40%, var(--hairline)); }
+  .recip-card:hover { border-color: var(--ink-muted); }
+  .chip:hover:not(:disabled) { background: var(--surface-soft); border-color: var(--ink-muted); }
+
+  @keyframes tabIn { from { transform: translateX(12px); } to { transform: none; } }
+  .tab-enter { animation: tabIn .4s var(--ease-out-power3); }
+  @keyframes fadeUp { from { transform: translateY(8px); } to { transform: none; } }
+  .step-enter { animation: fadeUp .35s var(--ease-out-power3); }
+  @keyframes slideRight { from { transform: translateX(20px); } to { transform: none; } }
+  .detail-enter, .reader-enter { animation: slideRight .42s var(--ease-out-power3); }
+  @keyframes popIn { from { transform: scale(0.97) translateY(8px); } to { transform: none; } }
+  .dispatch-card { animation: popIn .34s var(--ease-out-power3); }
+  .dispatch-scrim { animation: fadeUp .25s ease; }
+  @keyframes heroIn { from { transform: scale(0.94); } to { transform: none; } }
+  .recip-hero { animation: heroIn .5s var(--ease-out-power3); }
+  @keyframes toastIn { from { opacity: 0; transform: translate(-50%, 14px); } to { opacity: 1; transform: translate(-50%, 0); } }
+  .toast-enter { animation: toastIn .35s var(--ease-out-power3); }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .tool-spin { animation: spin .8s linear infinite; }
+
+  .chat-md .md-p { margin: 0 0 8px; }
+  .chat-md .md-p:last-child { margin-bottom: 0; }
+  .chat-md .md-ul, .chat-md .md-ol { margin: 4px 0 8px; padding-left: 18px; }
+  .chat-md li { margin: 3px 0; }
+  .chat-md strong { color: var(--ink-primary); font-weight: 600; }
+  .chat-md code { background: var(--surface-card); border: 1px solid var(--hairline); border-radius: 4px; padding: 1px 5px; font-size: 12px; }
+  .chat-md .md-h { font-size: 13.5px; font-weight: 600; color: var(--ink-primary); margin: 8px 0 4px; }
+  textarea::placeholder, input::placeholder { color: var(--ink-muted); }
+
+  /* ── loading overlay (removed by data.js once SOLAR is ready) ── */
+  #st-loader {
+    position: fixed; inset: 0; z-index: 9999;
+    background: var(--canvas, #fafafa);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 18px;
+    font-family: var(--font-body, system-ui);
+  }
+  #st-loader .st-logo {
+    width: 52px; height: 52px; border-radius: 14px;
+    background: var(--accent-primary, #034f46);
+    display: grid; place-items: center;
+  }
+  #st-loader .st-ring {
+    width: 36px; height: 36px; border-radius: 50%;
+    border: 3px solid color-mix(in oklab, var(--accent-primary, #034f46) 22%, transparent);
+    border-top-color: var(--accent-primary, #034f46);
+    animation: spin .9s linear infinite;
+  }
+  #st-loader h1 {
+    font-size: 19px; font-weight: 600; color: var(--ink-primary, #111);
+    letter-spacing: -0.01em; margin: 0;
+  }
+  #st-loader p {
+    font-size: 13px; color: var(--ink-muted, #888); margin: 0; max-width: 320px; text-align: center;
+  }
+  #st-error { font-size: 12px; color: #c0473e; max-width: 380px; text-align: center; min-height: 16px; }
+</style>
+</head>
+<body>
+
+<!-- Loading overlay — removed by data.js after SOLAR is ready -->
+<div id="st-loader">
+  <div class="st-logo">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
+    </svg>
+  </div>
+  <div class="st-ring"></div>
+  <h1>SolarTwin</h1>
+  <p>Loading live twin data from the agent backend…</p>
+  <span id="st-error"></span>
+</div>
+
+<div id="app"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script src="_ds/flow-design-system-96ad7fed-589e-478c-887f-5f0b14ef8a13/_ds_bundle.js"></script>
+<script src="data.js"></script>
+
+<script type="text/babel" src="components.jsx"></script>
+<script type="text/babel" src="charts.jsx"></script>
+<script type="text/babel" src="overview.jsx"></script>
+<script type="text/babel" src="inverters.jsx"></script>
+<script type="text/babel" src="anomalies.jsx"></script>
+<script type="text/babel" src="dispatch.jsx"></script>
+<script type="text/babel" src="emails.jsx"></script>
+<script type="text/babel" src="chatbot.jsx"></script>
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+
+<!-- Guard: patch mountApp (defined in app.jsx) to also wait for window.SOLAR -->
+<script>
+  // app.jsx calls mountApp() which polls until all React components are registered.
+  // We additionally need window.SOLAR to be set (async fetch in data.js).
+  // Override ReactDOM.createRoot so the very first render is deferred until SOLAR exists.
+  const _origCreateRoot = ReactDOM.createRoot.bind(ReactDOM);
+  ReactDOM.createRoot = function(el) {
+    const root = _origCreateRoot(el);
+    const _origRender = root.render.bind(root);
+    root.render = function(tree) {
+      if (!window.SOLAR) {
+        // Poll until data.js sets window.SOLAR then render
+        const wait = setInterval(() => {
+          if (window.SOLAR) { clearInterval(wait); _origRender(tree); }
+        }, 20);
+      } else {
+        _origRender(tree);
+      }
+      // Restore to native after first call
+      ReactDOM.createRoot = _origCreateRoot;
+    };
+    return root;
+  };
+</script>
+
+<script type="text/babel" src="app.jsx"></script>
+</body>
+</html>

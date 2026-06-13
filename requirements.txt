@@ -21,3 +21,6 @@ mlflow
 optuna
 pvlib
 statsmodels
+# Agent layer (Rafay)
+google-genai
+python-dotenv

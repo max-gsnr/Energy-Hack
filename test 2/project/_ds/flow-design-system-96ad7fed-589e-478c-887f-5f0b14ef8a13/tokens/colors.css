@@ -1,0 +1,45 @@
+/* Flow — Color tokens
+   Clean neutral grey/white canvas + dark ink.
+   NO orange/coral as a primary (orange exists only as a sparing glow). */
+:root {
+  /* ── Base backgrounds ───────────────────────────── */
+  --canvas:        #fafafa;  /* clean neutral near-white — whole viewport */
+  --surface-card:  #ffffff;  /* the main rounded content container     */
+  --surface-soft:  #f4f4f5;  /* widget / inset card fill (neutral grey) */
+  --surface-dark:  #1a1a1a;  /* primary CTA, dark surfaces             */
+
+  /* ── Accents ────────────────────────────────────── */
+  --accent-primary:   #034f46; /* deep fathom green — fills, charts    */
+  --accent-secondary: #f0d7ff; /* soft dawn purple — badges, trial     */
+  --accent-glow:      #ffa946; /* warm amber — sparing highlight only  */
+  --accent-success:   #cef5ca; /* mint — positive / streak low-level   */
+
+  /* ── Fathom-green ramp (heatmaps, data-viz steps) ── */
+  --green-100: #cef5ca;  /* lightest active step  */
+  --green-200: #9fdcb0;
+  --green-300: #5fb38c;
+  --green-400: #1f8268;
+  --green-500: #034f46;  /* = accent-primary, darkest step */
+
+  /* ── Text & ink ─────────────────────────────────── */
+  --ink-primary:   #1a1a1a;  /* headings, stat numbers     */
+  --ink-secondary: #333333;  /* nav links, running text    */
+  --ink-muted:     #8a8a88;  /* captions, labels, inactive */
+  --on-dark:       #ffffff;  /* text on dark surfaces      */
+  --on-accent:     #ffffff;  /* text on fathom green       */
+
+  /* ── Borders / hairlines ────────────────────────── */
+  --hairline:      #e6e6e6;            /* neutral 1px separators */
+  --hairline-dark: rgba(26,26,26,.30); /* on dark / overlays  */
+
+  /* ── Semantic aliases ───────────────────────────── */
+  --bg-app:        var(--canvas);
+  --bg-panel:      var(--surface-card);
+  --bg-widget:     var(--surface-soft);
+  --text-body:     var(--ink-secondary);
+  --text-heading:  var(--ink-primary);
+  --text-caption:  var(--ink-muted);
+  --border-default: var(--hairline);
+
+  --focus-ring:    color-mix(in oklab, var(--accent-primary) 55%, transparent);
+}
