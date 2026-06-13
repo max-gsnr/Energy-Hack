@@ -1,0 +1,587 @@
+{
+  "INV 01.01.001": {
+    "acute_fault": 0,
+    "explained": 2,
+    "first": "2019-02-04",
+    "last": "2025-08-14",
+    "lost": 62.47,
+    "n": 5,
+    "outage": 5
+  },
+  "INV 01.01.002": {
+    "acute_fault": 0,
+    "explained": 3,
+    "first": "2019-02-04",
+    "last": "2025-08-14",
+    "lost": 168.81,
+    "n": 8,
+    "outage": 8
+  },
+  "INV 01.01.003": {
+    "acute_fault": 0,
+    "explained": 3,
+    "first": "2019-02-04",
+    "last": "2025-08-14",
+    "lost": 89.06,
+    "n": 5,
+    "outage": 5
+  },
+  "INV 01.01.004": {
+    "acute_fault": 1,
+    "explained": 7,
+    "first": "2019-02-04",
+    "last": "2025-08-14",
+    "lost": 307.27,
+    "n": 9,
+    "outage": 8
+  },
+  "INV 01.01.005": {
+    "acute_fault": 0,
+    "explained": 1,
+    "first": "2019-02-04",
+    "last": "2025-08-14",
+    "lost": 11.71,
+    "n": 2,
+    "outage": 2
+  },
+  "INV 01.01.006": {
+    "acute_fault": 0,
+    "explained": 1,
+    "first": "2019-02-04",
+    "last": "2025-08-14",
+    "lost": 41.08,
+    "n": 3,
+    "outage": 3
+  },
+  "INV 01.01.007": {
+    "acute_fault": 0,
+    "explained": 2,
+    "first": "2019-02-04",
+    "last": "2025-08-14",
+    "lost": 8.18,
+    "n": 3,
+    "outage": 3
+  },
+  "INV 01.02.008": {
+    "acute_fault": 0,
+    "explained": 1,
+    "first": "2019-02-04",
+    "last": "2025-08-14",
+    "lost": 47.5,
+    "n": 3,
+    "outage": 3
+  },
+  "INV 01.02.009": {
+    "acute_fault": 0,
+    "explained": 3,
+    "first": "2019-02-04",
+    "last": "2025-08-14",
+    "lost": 137.82,
+    "n": 8,
+    "outage": 8
+  },
+  "INV 01.02.010": {
+    "acute_fault": 0,
+    "explained": 1,
+    "first": "2019-02-04",
+    "last": "2025-08-14",
+    "lost": 67.31,
+    "n": 3,
+    "outage": 3
+  },
+  "INV 01.02.011": {
+    "acute_fault": 1,
+    "explained": 2,
+    "first": "2019-02-04",
+    "last": "2025-08-14",
+    "lost": 86.05,
+    "n": 4,
+    "outage": 3
+  },
+  "INV 01.02.012": {
+    "acute_fault": 0,
+    "explained": 1,
+    "first": "2019-02-04",
+    "last": "2019-08-21",
+    "lost": 47.47,
+    "n": 3,
+    "outage": 3
+  },
+  "INV 01.02.013": {
+    "acute_fault": 0,
+    "explained": 0,
+    "first": "2019-02-04",
+    "last": "2019-02-08",
+    "lost": 32.79,
+    "n": 2,
+    "outage": 2
+  },
+  "INV 01.02.014": {
+    "acute_fault": 0,
+    "explained": 2,
+    "first": "2019-02-04",
+    "last": "2019-07-25",
+    "lost": 24.56,
+    "n": 3,
+    "outage": 3
+  },
+  "INV 01.03.015": {
+    "acute_fault": 0,
+    "explained": 1,
+    "first": "2019-02-04",
+    "last": "2019-03-11",
+    "lost": 109.43,
+    "n": 4,
+    "outage": 4
+  },
+  "INV 01.03.016": {
+    "acute_fault": 0,
+    "explained": 2,
+    "first": "2019-02-04",
+    "last": "2025-08-14",
+    "lost": 159.63,
+    "n": 12,
+    "outage": 12
+  },
+  "INV 01.03.017": {
+    "acute_fault": 0,
+    "explained": 14,
+    "first": "2019-02-04",
+    "last": "2025-08-14",
+    "lost": 1547.82,
+    "n": 17,
+    "outage": 17
+  },
+  "INV 01.03.018": {
+    "acute_fault": 0,
+    "explained": 2,
+    "first": "2019-02-04",
+    "last": "2025-08-14",
+    "lost": 33.21,
+    "n": 3,
+    "outage": 3
+  },
+  "INV 01.03.019": {
+    "acute_fault": 0,
+    "explained": 2,
+    "first": "2019-02-04",
+    "last": "2025-08-14",
+    "lost": 107.59,
+    "n": 5,
+    "outage": 5
+  },
+  "INV 01.03.020": {
+    "acute_fault": 0,
+    "explained": 2,
+    "first": "2019-02-06",
+    "last": "2025-08-14",
+    "lost": 44.62,
+    "n": 3,
+    "outage": 3
+  },
+  "INV 01.03.021": {
+    "acute_fault": 0,
+    "explained": 2,
+    "first": "2019-02-04",
+    "last": "2025-08-14",
+    "lost": 56.92,
+    "n": 3,
+    "outage": 3
+  },
+  "INV 01.04.022": {
+    "acute_fault": 0,
+    "explained": 2,
+    "first": "2019-02-04",
+    "last": "2025-08-14",
+    "lost": 94.06,
+    "n": 4,
+    "outage": 4
+  },
+  "INV 01.04.023": {
+    "acute_fault": 0,
+    "explained": 2,
+    "first": "2019-02-04",
+    "last": "2023-08-18",
+    "lost": 143.87,
+    "n": 6,
+    "outage": 6
+  },
+  "INV 01.04.024": {
+    "acute_fault": 0,
+    "explained": 3,
+    "first": "2019-02-04",
+    "last": "2025-08-14",
+    "lost": 127.66,
+    "n": 7,
+    "outage": 7
+  },
+  "INV 01.04.025": {
+    "acute_fault": 0,
+    "explained": 3,
+    "first": "2019-02-04",
+    "last": "2025-08-14",
+    "lost": 34.65,
+    "n": 4,
+    "outage": 4
+  },
+  "INV 01.04.026": {
+    "acute_fault": 0,
+    "explained": 19,
+    "first": "2019-02-04",
+    "last": "2025-08-14",
+    "lost": 2336.04,
+    "n": 23,
+    "outage": 23
+  },
+  "INV 01.04.027": {
+    "acute_fault": 0,
+    "explained": 2,
+    "first": "2019-02-04",
+    "last": "2023-08-18",
+    "lost": 70.94,
+    "n": 3,
+    "outage": 3
+  },
+  "INV 01.04.028": {
+    "acute_fault": 0,
+    "explained": 4,
+    "first": "2019-02-04",
+    "last": "2025-08-14",
+    "lost": 88.16,
+    "n": 4,
+    "outage": 4
+  },
+  "INV 01.05.029": {
+    "acute_fault": 0,
+    "explained": 16,
+    "first": "2019-02-04",
+    "last": "2025-08-14",
+    "lost": 1741.83,
+    "n": 17,
+    "outage": 17
+  },
+  "INV 01.05.030": {
+    "acute_fault": 0,
+    "explained": 1,
+    "first": "2019-02-04",
+    "last": "2023-08-18",
+    "lost": 33.21,
+    "n": 5,
+    "outage": 5
+  },
+  "INV 01.05.031": {
+    "acute_fault": 0,
+    "explained": 1,
+    "first": "2019-02-04",
+    "last": "2019-03-11",
+    "lost": 61.52,
+    "n": 2,
+    "outage": 2
+  },
+  "INV 01.05.032": {
+    "acute_fault": 0,
+    "explained": 1,
+    "first": "2019-02-04",
+    "last": "2019-03-11",
+    "lost": 49.88,
+    "n": 2,
+    "outage": 2
+  },
+  "INV 01.05.033": {
+    "acute_fault": 0,
+    "explained": 16,
+    "first": "2019-02-04",
+    "last": "2019-07-11",
+    "lost": 2140.07,
+    "n": 17,
+    "outage": 17
+  },
+  "INV 01.05.034": {
+    "acute_fault": 0,
+    "explained": 1,
+    "first": "2019-02-04",
+    "last": "2019-03-11",
+    "lost": 78.14,
+    "n": 2,
+    "outage": 2
+  },
+  "INV 01.05.035": {
+    "acute_fault": 0,
+    "explained": 1,
+    "first": "2019-02-04",
+    "last": "2019-03-11",
+    "lost": 80.23,
+    "n": 3,
+    "outage": 3
+  },
+  "INV 01.06.036": {
+    "acute_fault": 0,
+    "explained": 2,
+    "first": "2019-02-04",
+    "last": "2025-08-14",
+    "lost": 64.85,
+    "n": 5,
+    "outage": 5
+  },
+  "INV 01.06.037": {
+    "acute_fault": 0,
+    "explained": 2,
+    "first": "2019-02-04",
+    "last": "2025-08-14",
+    "lost": 95.41,
+    "n": 7,
+    "outage": 7
+  },
+  "INV 01.06.038": {
+    "acute_fault": 0,
+    "explained": 2,
+    "first": "2019-02-04",
+    "last": "2025-08-14",
+    "lost": 71.27,
+    "n": 4,
+    "outage": 4
+  },
+  "INV 01.06.039": {
+    "acute_fault": 1,
+    "explained": 3,
+    "first": "2019-02-04",
+    "last": "2025-08-14",
+    "lost": 124.78,
+    "n": 4,
+    "outage": 3
+  },
+  "INV 01.06.040": {
+    "acute_fault": 0,
+    "explained": 2,
+    "first": "2019-02-04",
+    "last": "2025-08-14",
+    "lost": 66.16,
+    "n": 4,
+    "outage": 4
+  },
+  "INV 01.06.041": {
+    "acute_fault": 0,
+    "explained": 2,
+    "first": "2019-02-04",
+    "last": "2025-08-14",
+    "lost": 86.65,
+    "n": 5,
+    "outage": 5
+  },
+  "INV 01.06.042": {
+    "acute_fault": 0,
+    "explained": 2,
+    "first": "2019-02-04",
+    "last": "2025-08-14",
+    "lost": 70.29,
+    "n": 4,
+    "outage": 4
+  },
+  "INV 01.06.043": {
+    "acute_fault": 0,
+    "explained": 2,
+    "first": "2019-03-11",
+    "last": "2025-08-14",
+    "lost": 30.53,
+    "n": 2,
+    "outage": 2
+  },
+  "INV 01.07.044": {
+    "acute_fault": 0,
+    "explained": 3,
+    "first": "2019-02-04",
+    "last": "2025-08-14",
+    "lost": 66.76,
+    "n": 4,
+    "outage": 4
+  },
+  "INV 01.07.045": {
+    "acute_fault": 0,
+    "explained": 3,
+    "first": "2019-02-04",
+    "last": "2025-08-14",
+    "lost": 92.63,
+    "n": 7,
+    "outage": 7
+  },
+  "INV 01.07.046": {
+    "acute_fault": 0,
+    "explained": 3,
+    "first": "2019-02-04",
+    "last": "2023-08-18",
+    "lost": 132.58,
+    "n": 6,
+    "outage": 6
+  },
+  "INV 01.07.047": {
+    "acute_fault": 4,
+    "explained": 2,
+    "first": "2019-02-04",
+    "last": "2021-12-10",
+    "lost": 792.99,
+    "n": 14,
+    "outage": 10
+  },
+  "INV 01.07.048": {
+    "acute_fault": 0,
+    "explained": 5,
+    "first": "2019-02-04",
+    "last": "2023-08-18",
+    "lost": 98.07,
+    "n": 7,
+    "outage": 7
+  },
+  "INV 01.07.049": {
+    "acute_fault": 0,
+    "explained": 3,
+    "first": "2019-01-10",
+    "last": "2019-05-02",
+    "lost": 69.24,
+    "n": 5,
+    "outage": 5
+  },
+  "INV 01.07.050": {
+    "acute_fault": 0,
+    "explained": 3,
+    "first": "2019-02-04",
+    "last": "2023-08-18",
+    "lost": 105.1,
+    "n": 5,
+    "outage": 5
+  },
+  "INV 01.07.051": {
+    "acute_fault": 3,
+    "explained": 3,
+    "first": "2019-02-04",
+    "last": "2021-12-10",
+    "lost": 402.65,
+    "n": 9,
+    "outage": 6
+  },
+  "INV 01.08.052": {
+    "acute_fault": 0,
+    "explained": 3,
+    "first": "2019-02-04",
+    "last": "2025-08-14",
+    "lost": 43.2,
+    "n": 4,
+    "outage": 4
+  },
+  "INV 01.08.053": {
+    "acute_fault": 0,
+    "explained": 5,
+    "first": "2019-03-11",
+    "last": "2025-08-14",
+    "lost": 62.08,
+    "n": 5,
+    "outage": 5
+  },
+  "INV 01.08.054": {
+    "acute_fault": 0,
+    "explained": 2,
+    "first": "2019-02-04",
+    "last": "2025-08-14",
+    "lost": 55.42,
+    "n": 5,
+    "outage": 5
+  },
+  "INV 01.08.055": {
+    "acute_fault": 0,
+    "explained": 5,
+    "first": "2019-02-05",
+    "last": "2025-08-14",
+    "lost": 173.65,
+    "n": 10,
+    "outage": 10
+  },
+  "INV 01.08.056": {
+    "acute_fault": 0,
+    "explained": 3,
+    "first": "2019-02-08",
+    "last": "2025-08-14",
+    "lost": 82.05,
+    "n": 3,
+    "outage": 3
+  },
+  "INV 01.08.057": {
+    "acute_fault": 2,
+    "explained": 4,
+    "first": "2019-03-11",
+    "last": "2025-08-14",
+    "lost": 160.99,
+    "n": 6,
+    "outage": 4
+  },
+  "INV 01.08.058": {
+    "acute_fault": 0,
+    "explained": 3,
+    "first": "2019-03-11",
+    "last": "2025-08-14",
+    "lost": 52.16,
+    "n": 3,
+    "outage": 3
+  },
+  "INV 01.08.059": {
+    "acute_fault": 2,
+    "explained": 4,
+    "first": "2019-02-04",
+    "last": "2023-08-18",
+    "lost": 92.13,
+    "n": 8,
+    "outage": 6
+  },
+  "INV 01.09.060": {
+    "acute_fault": 0,
+    "explained": 3,
+    "first": "2019-02-04",
+    "last": "2023-08-18",
+    "lost": 67.21,
+    "n": 6,
+    "outage": 6
+  },
+  "INV 01.09.061": {
+    "acute_fault": 0,
+    "explained": 4,
+    "first": "2019-02-05",
+    "last": "2021-12-10",
+    "lost": 107.18,
+    "n": 8,
+    "outage": 8
+  },
+  "INV 01.09.062": {
+    "acute_fault": 0,
+    "explained": 6,
+    "first": "2019-02-08",
+    "last": "2024-04-24",
+    "lost": 132.68,
+    "n": 8,
+    "outage": 8
+  },
+  "INV 01.09.063": {
+    "acute_fault": 1,
+    "explained": 2,
+    "first": "2019-03-11",
+    "last": "2019-10-07",
+    "lost": 117.21,
+    "n": 3,
+    "outage": 2
+  },
+  "INV 01.09.064": {
+    "acute_fault": 0,
+    "explained": 1,
+    "first": "2019-02-04",
+    "last": "2021-12-10",
+    "lost": 57.48,
+    "n": 5,
+    "outage": 5
+  },
+  "INV 01.09.065": {
+    "acute_fault": 0,
+    "explained": 3,
+    "first": "2019-02-08",
+    "last": "2023-08-18",
+    "lost": 68.1,
+    "n": 4,
+    "outage": 4
+  }
+}

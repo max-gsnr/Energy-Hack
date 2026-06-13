@@ -1,0 +1,177 @@
+[
+  {
+    "critical": 1,
+    "lost": 1.95,
+    "warning": 0,
+    "watch": 0,
+    "ym": "2019-01"
+  },
+  {
+    "critical": 129,
+    "lost": 2489.26,
+    "warning": 1,
+    "watch": 0,
+    "ym": "2019-02"
+  },
+  {
+    "critical": 51,
+    "lost": 1980.99,
+    "warning": 0,
+    "watch": 0,
+    "ym": "2019-03"
+  },
+  {
+    "critical": 1,
+    "lost": 172.11,
+    "warning": 0,
+    "watch": 0,
+    "ym": "2019-04"
+  },
+  {
+    "critical": 21,
+    "lost": 1081.37,
+    "warning": 0,
+    "watch": 0,
+    "ym": "2019-05"
+  },
+  {
+    "critical": 29,
+    "lost": 2244.98,
+    "warning": 0,
+    "watch": 0,
+    "ym": "2019-06"
+  },
+  {
+    "critical": 36,
+    "lost": 4258.17,
+    "warning": 0,
+    "watch": 0,
+    "ym": "2019-07"
+  },
+  {
+    "critical": 2,
+    "lost": 9.88,
+    "warning": 0,
+    "watch": 0,
+    "ym": "2019-08"
+  },
+  {
+    "critical": 0,
+    "lost": 1148.0,
+    "warning": 14,
+    "watch": 0,
+    "ym": "2019-10"
+  },
+  {
+    "critical": 1,
+    "lost": 5.78,
+    "warning": 0,
+    "watch": 0,
+    "ym": "2020-08"
+  },
+  {
+    "critical": 1,
+    "lost": 6.42,
+    "warning": 0,
+    "watch": 0,
+    "ym": "2020-11"
+  },
+  {
+    "critical": 1,
+    "lost": 0.58,
+    "warning": 0,
+    "watch": 0,
+    "ym": "2021-07"
+  },
+  {
+    "critical": 1,
+    "lost": 0.61,
+    "warning": 0,
+    "watch": 0,
+    "ym": "2021-08"
+  },
+  {
+    "critical": 2,
+    "lost": 11.73,
+    "warning": 0,
+    "watch": 0,
+    "ym": "2021-09"
+  },
+  {
+    "critical": 1,
+    "lost": 1.22,
+    "warning": 0,
+    "watch": 0,
+    "ym": "2021-10"
+  },
+  {
+    "critical": 15,
+    "lost": 34.58,
+    "warning": 0,
+    "watch": 0,
+    "ym": "2021-12"
+  },
+  {
+    "critical": 1,
+    "lost": 19.09,
+    "warning": 0,
+    "watch": 0,
+    "ym": "2022-02"
+  },
+  {
+    "critical": 1,
+    "lost": 10.13,
+    "warning": 0,
+    "watch": 0,
+    "ym": "2022-03"
+  },
+  {
+    "critical": 4,
+    "lost": 48.24,
+    "warning": 0,
+    "watch": 0,
+    "ym": "2022-06"
+  },
+  {
+    "critical": 1,
+    "lost": 11.69,
+    "warning": 0,
+    "watch": 0,
+    "ym": "2022-08"
+  },
+  {
+    "critical": 2,
+    "lost": 5.62,
+    "warning": 0,
+    "watch": 0,
+    "ym": "2023-07"
+  },
+  {
+    "critical": 19,
+    "lost": 303.95,
+    "warning": 0,
+    "watch": 0,
+    "ym": "2023-08"
+  },
+  {
+    "critical": 1,
+    "lost": 1.4,
+    "warning": 0,
+    "watch": 0,
+    "ym": "2024-03"
+  },
+  {
+    "critical": 1,
+    "lost": 3.31,
+    "warning": 0,
+    "watch": 0,
+    "ym": "2024-04"
+  },
+  {
+    "critical": 40,
+    "lost": 62.0,
+    "warning": 0,
+    "watch": 0,
+    "ym": "2025-08"
+  }
+]
