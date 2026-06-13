@@ -136,15 +136,37 @@
   // ── seasonal monthly shape (Brandenberg, DE solar profile) ────────────────
   const SHAPE = [0.34, 0.55, 0.86, 1.12, 1.30, 1.36, 1.40, 1.25, 0.98, 0.66, 0.40, 0.28];
   const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const MONTHS_SHORT = ["J","F","M","A","M","J","J","A","S","O","N","D"];
   const SHAPE_SUM = SHAPE.reduce((s, x) => s + x, 0);
 
+  // Build 12-month seasonal curve for a single reference year (GWh output)
   function buildMonthly(refExpectedKwh, refActualKwh) {
-    // both in kWh, output in GWh
     return SHAPE.map((s, i) => {
       const expected = +((s / SHAPE_SUM) * refExpectedKwh / 1e6).toFixed(2);
       const actual   = +((s / SHAPE_SUM) * refActualKwh   / 1e6).toFixed(3);
       return { m: MONTHS[i], expected, actual };
     });
+  }
+
+  // Build full multi-year monthly series: 7 years × 12 months = 84 data points.
+  // Each month's value = seasonal_fraction × that_year's_total.
+  // X-axis label: show "Jan YY" at start of each year, month initial at mid-year, empty otherwise.
+  function buildAllMonthly(years) {
+    const result = [];
+    years.forEach(yr => {
+      const yy = String(yr.year).slice(2); // "19", "20" etc.
+      SHAPE.forEach((s, i) => {
+        const frac = s / SHAPE_SUM;
+        const expected = +(frac * yr.expected).toFixed(3); // yr.expected is already GWh
+        const actual   = +(frac * yr.actual).toFixed(3);
+        // Label: "Jan 19" at January of each year, abbreviated month at July, blank otherwise
+        let label = "";
+        if (i === 0)  label = `Jan '${yy}`;
+        else if (i === 6) label = `Jul`;
+        result.push({ m: label, expected, actual });
+      });
+    });
+    return result;
   }
 
   // ── email drafting (synchronous template, same pattern as original) ────────
@@ -210,19 +232,27 @@ SolarTwin Plant Analyst`;
     const yearlySummary = (summary.yearly || []);
 
     // Prefer plant_summary.yearly (has actual_kwh, expected_kwh, curtailment_kwh)
-    const years = (yearlySummary.length ? yearlySummary : yearlyRaw).map(y => ({
-      year:        y.year,
-      expected:    +((y.expected_kwh || (y.median_factor || 1) * (summary.total_expected_kwh || 1e6) / 7) / 1e6).toFixed(2),
-      actual:      +((y.actual_kwh   || (y.lost_kwh ? y.expected_kwh - y.lost_kwh : 0)) / 1e6).toFixed(2),
-      curtailment: +((y.curtailment_kwh || 0) / 1e6).toFixed(2),
-      gap:         +((y.lost_kwh || Math.max(0, (y.expected_kwh || 0) - (y.actual_kwh || 0))) / 1e6).toFixed(2),
-    }));
+    const years = (yearlySummary.length ? yearlySummary : yearlyRaw).map(y => {
+      const exp = (y.expected_kwh || (y.median_factor || 1) * (summary.total_expected_kwh || 1e6) / 7);
+      const act = (y.actual_kwh   || (y.lost_kwh ? y.expected_kwh - y.lost_kwh : 0));
+      const curt = (y.curtailment_kwh || 0);
+      const totalGap = Math.max(0, exp - act);
+      return {
+        year:        y.year,
+        expected:    +(exp  / 1e6).toFixed(2),
+        actual:      +(act  / 1e6).toFixed(2),
+        curtailment: +(curt / 1e6).toFixed(2),
+        anomalyLoss: +((y.lost_kwh || 0) / 1e6).toFixed(2),
+        gap:         +(totalGap / 1e6).toFixed(2),  // always = expected - actual
+      };
+    });
 
     // If yearly from degradation_trend_summary, use plant_summary for totals
-    const lastYear = years[years.length - 1] || { year: 2025, expected: 50, actual: 44, curtailment: 2 };
+    const lastYear = years[years.length - 1] || { year: 2025, expected: 50, actual: 44, curtailment: 2, gap: 6 };
 
-    // Monthly
-    const monthly = buildMonthly(lastYear.expected * 1e6, lastYear.actual * 1e6);
+    // Full multi-year monthly series for the "Twin vs reality" chart (all years × 12 months)
+    const monthly = buildAllMonthly(years);
+    const refYear = years.length >= 2 ? `${years[0].year}–${lastYear.year}` : String(lastYear.year);
 
     // Derive plant capacity from actual generation data (~1000 full-load hours/year)
     const avgAnnualExpectedKwh = years.length
@@ -284,10 +314,14 @@ SolarTwin Plant Analyst`;
     // All anomalies flat
     const allAnoms = inverters.flatMap(iv => iv.anomalies);
 
-    // Worst 8 by lossEur
+    // Worst performers = FLAGGED anomalies ranked by € loss. Normal inverters are
+    // excluded even if they have high lifetime loss, because that loss is expected
+    // aging (tracking the envelope), not an actionable anomaly.
+    const FLAGGED = new Set(["critical", "warning", "watch"]);
     const worst = [...inverters]
+      .filter(iv => FLAGGED.has(iv.severity))
       .sort((a, b) => b.lossEur - a.lossEur)
-      .slice(0, 8)
+      .slice(0, 12)
       .map((iv, i) => ({ ...iv, rank: i + 1 }));
 
     // Headline from metadata
@@ -324,7 +358,7 @@ SolarTwin Plant Analyst`;
       fleet,
       totalLossKwh,
       totalLossEur,
-      refYear:       lastYear.year,
+      refYear,
       emails:        [],  // filled below
     };
 
@@ -407,17 +441,17 @@ SolarTwin Plant Analyst`;
 
     const fleet      = Object.fromEntries(SEV_ORDER.map(s => [s, inverters.filter(iv => iv.severity === s).length]));
     const allAnoms   = inverters.flatMap(iv => iv.anomalies);
-    const worst      = [...inverters].sort((a, b) => b.lossEur - a.lossEur).slice(0, 8).map((iv, i) => ({ ...iv, rank: i + 1 }));
+    const worst      = [...inverters].filter(iv => ["critical","warning","watch"].includes(iv.severity)).sort((a, b) => b.lossEur - a.lossEur).slice(0, 12).map((iv, i) => ({ ...iv, rank: i + 1 }));
     const totalLoss  = inverters.reduce((s, iv) => s + iv.lossKwh, 0);
 
     const years = [
-      { year: 2019, expected: 40.9, actual: 39.8, curtailment: 0.6, gap: 1.1 },
-      { year: 2020, expected: 40.6, actual: 39.1, curtailment: 0.8, gap: 1.5 },
-      { year: 2021, expected: 40.2, actual: 38.0, curtailment: 1.0, gap: 2.2 },
-      { year: 2022, expected: 39.9, actual: 38.6, curtailment: 0.9, gap: 1.3 },
-      { year: 2023, expected: 39.6, actual: 37.4, curtailment: 1.5, gap: 2.2 },
-      { year: 2024, expected: 39.4, actual: 36.9, curtailment: 1.9, gap: 2.5 },
-      { year: 2025, expected: 39.1, actual: 36.1, curtailment: 2.2, gap: 3.0 },
+      { year: 2019, expected: 40.9, actual: 39.8, curtailment: 0.6, anomalyLoss: 0.4, gap: 1.1 },
+      { year: 2020, expected: 40.6, actual: 39.1, curtailment: 0.8, anomalyLoss: 0.6, gap: 1.5 },
+      { year: 2021, expected: 40.2, actual: 38.0, curtailment: 1.0, anomalyLoss: 0.9, gap: 2.2 },
+      { year: 2022, expected: 39.9, actual: 38.6, curtailment: 0.9, anomalyLoss: 0.5, gap: 1.3 },
+      { year: 2023, expected: 39.6, actual: 37.4, curtailment: 1.5, anomalyLoss: 0.9, gap: 2.2 },
+      { year: 2024, expected: 39.4, actual: 36.9, curtailment: 1.9, anomalyLoss: 1.0, gap: 2.5 },
+      { year: 2025, expected: 39.1, actual: 36.1, curtailment: 2.2, anomalyLoss: 1.1, gap: 3.0 },
     ];
 
     const plant = {
@@ -427,9 +461,9 @@ SolarTwin Plant Analyst`;
       headline: "8-year twin · 48 power units + battery · 1-min resolution",
       count: 48, groups, cols: 12, tariff,
       inverters, anomalies: allAnoms, worst, years,
-      monthly: buildMonthly(39.4 * 1e6, 36.9 * 1e6),
+      monthly: buildAllMonthly(years),
       fleet, totalLossKwh: totalLoss, totalLossEur: eur(totalLoss, tariff),
-      refYear: 2024, emails: [],
+      refYear: `${years[0].year}–${years[years.length-1].year}`, emails: [],
     };
     plant.emails = seedEmails(plant);
     return plant;
@@ -472,11 +506,11 @@ SolarTwin Plant Analyst`;
 
     const [tlResultsA, tlResultsB] = await Promise.all([
       Promise.all(sorted15A.map(iv =>
-        fetch(`${API}/timeline/${encodeURIComponent(iv.inverter_id)}?plant=A`)
+        fetch(`${API}/timeline/${encodeURIComponent(iv.inverter_id)}?plant=A&llm=false`)
           .then(r => r.ok ? r.json() : null).catch(() => null)
       )),
       Promise.all(sorted15B.map(iv =>
-        fetch(`${API}/timeline/${encodeURIComponent(iv.inverter_id)}?plant=B`)
+        fetch(`${API}/timeline/${encodeURIComponent(iv.inverter_id)}?plant=B&llm=false`)
           .then(r => r.ok ? r.json() : null).catch(() => null)
       )),
     ]);
@@ -508,6 +542,15 @@ SolarTwin Plant Analyst`;
       sevOrder: SEV_ORDER,
       sevColor:  SEV_COLOR,
       sevLabel:  SEV_LABEL,
+      // On-demand timeline fetch — called by InverterDetail when no pre-fetched data exists.
+      fetchTimeline: async (inverterId, plantKey) => {
+        try {
+          const r = await fetch(`${API}/timeline/${encodeURIComponent(inverterId)}?plant=${plantKey}&llm=false`);
+          if (!r.ok) return null;
+          return mapTimeline(await r.json());
+        } catch { return null; }
+      },
+      mapTimeline,
     };
 
   } catch (err) {
@@ -517,6 +560,23 @@ SolarTwin Plant Analyst`;
     // Full synthetic fallback for Plant A so the demo still works
     window.SOLAR = buildFallbackSOLAR();
   }
+
+  // ── window.claude shim ────────────────────────────────────────────────────
+  // chatbot.jsx calls window.claude.complete({messages}) which only works
+  // inside Claude's own sandbox. Here we route it to our /api/chat-direct endpoint.
+  window.claude = {
+    complete: async ({ messages }) => {
+      const msg = (messages || []).find(m => m.role === "user") || messages[0] || {};
+      const resp = await fetch("/api/chat-direct", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: msg.content || "" }),
+      });
+      if (!resp.ok) throw new Error(`chat-direct ${resp.status}`);
+      const data = await resp.json();
+      return data.reply || "(no response)";
+    },
+  };
 
   removeLoader();
 
@@ -588,16 +648,16 @@ SolarTwin Plant Analyst`;
     }
     const fleet    = Object.fromEntries(SEV_ORDER.map(s => [s, inverters.filter(iv => iv.severity === s).length]));
     const allAnoms = inverters.flatMap(iv => iv.anomalies);
-    const worst    = [...inverters].sort((a, b) => b.lossEur - a.lossEur).slice(0, 8).map((iv, i) => ({ ...iv, rank: i + 1 }));
+    const worst    = [...inverters].filter(iv => ["critical","warning","watch"].includes(iv.severity)).sort((a, b) => b.lossEur - a.lossEur).slice(0, 12).map((iv, i) => ({ ...iv, rank: i + 1 }));
     const totKwh   = inverters.reduce((s, iv) => s + iv.lossKwh, 0);
     const years    = [
-      { year: 2019, expected: 53.8, actual: 52.1, curtailment: 0.9, gap: 1.7 },
-      { year: 2020, expected: 53.2, actual: 50.4, curtailment: 1.1, gap: 2.8 },
-      { year: 2021, expected: 52.7, actual: 49.1, curtailment: 1.4, gap: 3.6 },
-      { year: 2022, expected: 52.1, actual: 50.6, curtailment: 1.0, gap: 1.5 },
-      { year: 2023, expected: 51.6, actual: 47.9, curtailment: 1.8, gap: 3.7 },
-      { year: 2024, expected: 51.0, actual: 46.2, curtailment: 2.3, gap: 4.8 },
-      { year: 2025, expected: 50.5, actual: 44.8, curtailment: 2.6, gap: 5.7 },
+      { year: 2019, expected: 53.8, actual: 52.1, curtailment: 0.9, anomalyLoss: 0.7, gap: 1.7 },
+      { year: 2020, expected: 53.2, actual: 50.4, curtailment: 1.1, anomalyLoss: 1.2, gap: 2.8 },
+      { year: 2021, expected: 52.7, actual: 49.1, curtailment: 1.4, anomalyLoss: 1.5, gap: 3.6 },
+      { year: 2022, expected: 52.1, actual: 50.6, curtailment: 1.0, anomalyLoss: 0.6, gap: 1.5 },
+      { year: 2023, expected: 51.6, actual: 47.9, curtailment: 1.8, anomalyLoss: 1.6, gap: 3.7 },
+      { year: 2024, expected: 51.0, actual: 46.2, curtailment: 2.3, anomalyLoss: 2.0, gap: 4.8 },
+      { year: 2025, expected: 50.5, actual: 44.8, curtailment: 2.6, anomalyLoss: 2.3, gap: 5.7 },
     ];
     const plantA = {
       key: "A", name: "Enerparc Plant A", location: "Brandenburg, DE",
@@ -606,8 +666,9 @@ SolarTwin Plant Analyst`;
       headline: "Demo mode — start backend for live data · 65 string inverters",
       count: 65, groups, cols: 13, tariff,
       inverters, anomalies: allAnoms, worst, years,
-      monthly: buildMonthly(51.0 * 1e6, 46.2 * 1e6),
-      fleet, totalLossKwh: totKwh, totalLossEur: eur(totKwh, tariff), refYear: 2024,
+      monthly: buildAllMonthly(years),
+      fleet, totalLossKwh: totKwh, totalLossEur: eur(totKwh, tariff),
+      refYear: `${years[0].year}–${years[years.length-1].year}`,
       emails: [],
     };
     plantA.emails = seedEmails(plantA);
@@ -615,6 +676,8 @@ SolarTwin Plant Analyst`;
     return {
       plants: { A: plantA, B: plantB }, employees: EMPLOYEES, empById, draftEmail,
       routeCat: routeCatFn, fmt, sevOrder: SEV_ORDER, sevColor: SEV_COLOR, sevLabel: SEV_LABEL,
+      fetchTimeline: async () => null,
+      mapTimeline,
     };
   }
 

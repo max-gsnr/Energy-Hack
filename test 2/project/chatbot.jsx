@@ -17,7 +17,7 @@ TOP ANOMALIES: ${anoms}.
 DISPATCH TEAM & ROUTING: ${routing}.`;
 }
 
-const SYS = `You are the SolarTwin Plant Analyst, an O&M intelligence assistant for solar plant operators. You answer ONLY using the exported digital-twin data provided below — never invent inverter IDs, numbers, or people not in the data. Be concise and operational. Use markdown: short bold lead, then bullet points. Reference specific inverter IDs, € losses, and the recommended dispatch recipient by name when relevant. Lead with the action. Do not use emoji.`;
+const SYS = `You are the SolarTwin Assistant, an O&M intelligence assistant for solar plant operators. You answer ONLY using the exported digital-twin data provided below — never invent inverter IDs, numbers, or people not in the data. Be concise and operational. Use markdown: short bold lead, then bullet points. Reference specific inverter IDs, € losses, and the recommended dispatch recipient by name when relevant. Lead with the action. Do not use emoji.`;
 
 function ChatMessage({ m }) {
   if (m.role === "user") {
@@ -48,7 +48,7 @@ function Chatbot({ plant }) {
   const streamRef = useRef();
 
   useEffect(() => {
-    setMessages([{ role: "assistant", content: `Hi — I'm your **Plant Analyst** for ${plant.name}. I'm grounded in the live digital-twin export: ${plant.count} units, ${plant.anomalies.length} open anomalies, €${SOLAR.fmt(plant.totalLossEur)} modelled loss.\n\nAsk me what to act on, or tap a suggestion below.` }]);
+    setMessages([{ role: "assistant", content: `Hi — I'm your **SolarTwin Assistant** for ${plant.name}. I'm grounded in the live digital-twin export: ${plant.count} units, ${plant.anomalies.length} open anomalies, €${SOLAR.fmt(plant.totalLossEur)} modelled loss.\n\nAsk me what to act on, or tap a suggestion below.` }]);
   }, [plant.key]);
   useEffect(() => { const el = streamRef.current; if (el) el.scrollTop = el.scrollHeight; }, [messages, busy]);
 
@@ -63,7 +63,7 @@ function Chatbot({ plant }) {
     try {
       let reply;
       if (window.claude && window.claude.complete) {
-        reply = await window.claude.complete({ messages: [{ role: "user", content: `${SYS}\n\n=== EXPORTED TWIN DATA ===\n${buildGrounding(plant)}\n=== END DATA ===\n\nConversation so far:\n${history}\n\nAnswer the latest user question as the Plant Analyst.` }] });
+        reply = await window.claude.complete({ messages: [{ role: "user", content: `${SYS}\n\n=== EXPORTED TWIN DATA ===\n${buildGrounding(plant)}\n=== END DATA ===\n\nConversation so far:\n${history}\n\nAnswer the latest user question as the SolarTwin Assistant.` }] });
       } else {
         reply = "I can't reach the model endpoint in this environment. In production this is wired to the Gemini API key with the same grounded twin data.";
       }
@@ -79,7 +79,7 @@ function Chatbot({ plant }) {
       React.createElement("span", { style: { width: 34, height: 34, borderRadius: 10, background: "var(--accent-primary)", display: "grid", placeItems: "center", flex: "0 0 auto" } },
         React.createElement(Icon, { name: "sparkles", size: 18, color: "var(--on-accent)" })),
       React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 1 } },
-        React.createElement("span", { style: { fontSize: 15.5, fontWeight: 600, color: "var(--ink-primary)" } }, "Plant Analyst"),
+        React.createElement("span", { style: { fontSize: 15.5, fontWeight: 600, color: "var(--ink-primary)" } }, "SolarTwin Assistant"),
         React.createElement("span", { style: { fontSize: 11.5, color: "var(--ink-muted)", display: "inline-flex", alignItems: "center", gap: 5 } },
           React.createElement("span", { style: { width: 6, height: 6, borderRadius: "50%", background: "var(--green-400)" } }), "Grounded in ", plant.name))),
     // stream

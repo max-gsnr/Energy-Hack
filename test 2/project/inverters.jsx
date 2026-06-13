@@ -27,24 +27,41 @@ function tileColor(iv, mode, maxLoss) {
 
 function Heat({ plant, mode, selectedId, onSelect }) {
   const [hovId, setHovId] = useState(null);
-  const maxLoss = Math.max(...plant.inverters.map((i) => i.lossEur));
-  const byGroup = plant.groups.map((g) => plant.inverters.filter((iv) => iv.group === g));
-  return React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 7 } },
-    byGroup.map((rowInvs, gi) => React.createElement("div", { key: gi, style: { display: "flex", alignItems: "center", gap: 8 } },
-      React.createElement("span", { style: { width: 22, fontSize: 11, fontWeight: 700, color: "var(--ink-muted)", textAlign: "right" } }, plant.groups[gi]),
-      React.createElement("div", { style: { display: "flex", gap: 5 } },
-        rowInvs.map((iv) => {
-          const sel = iv.id === selectedId, hov = iv.id === hovId;
-          const dim = hovId && !hov;
-          return React.createElement("button", { key: iv.id, onClick: () => onSelect(iv.id),
-            onMouseEnter: () => setHovId(iv.id), onMouseLeave: () => setHovId(null),
-            title: `${iv.id} · ${SOLAR.sevLabel[iv.severity]} · €${SOLAR.fmt(iv.lossEur)}`,
-            style: { width: 30, height: 30, borderRadius: "var(--radius-sm)", border: sel ? "2px solid var(--ink-primary)" : "2px solid transparent",
-              background: tileColor(iv, mode, maxLoss), cursor: "pointer", padding: 0,
-              transform: hov ? "scale(1.18)" : "scale(1)", opacity: dim ? 0.45 : 1,
-              transition: "transform var(--dur-fast) var(--ease-out-power3), opacity var(--dur-fast) ease, border-color var(--dur-fast) ease",
-              boxShadow: sel ? "var(--shadow-pop)" : "none", zIndex: hov || sel ? 2 : 1, position: "relative" } });
-        }))) ));
+  const maxLoss = Math.max(...plant.inverters.map((i) => i.lossEur), 1);
+  // Lay tiles on the physical row/column grid the backend already computes. This
+  // gives a balanced heatmap for any plant shape (e.g. 9x8 for A, 15x10 for B)
+  // instead of one thin row per inverter_group.
+  const maxCol = Math.max(...plant.inverters.map((iv) => iv.col || 1), 1);
+  const TILE = 26;
+  return React.createElement("div", {
+    style: {
+      display: "grid",
+      gridTemplateColumns: `repeat(${maxCol}, minmax(${TILE}px, 1fr))`,
+      gridAutoRows: `minmax(${TILE}px, 1fr)`,
+      gap: 6,
+      width: "100%",
+      maxWidth: maxCol * (TILE + 12),
+    },
+  },
+    plant.inverters.map((iv) => {
+      const sel = iv.id === selectedId, hov = iv.id === hovId;
+      const dim = hovId && !hov;
+      return React.createElement("button", {
+        key: iv.id, onClick: () => onSelect(iv.id),
+        onMouseEnter: () => setHovId(iv.id), onMouseLeave: () => setHovId(null),
+        title: `${iv.id} · ${SOLAR.sevLabel[iv.severity]} · €${SOLAR.fmt(iv.lossEur)}`,
+        style: {
+          gridColumn: (iv.col || 1), gridRow: (iv.row || 1),
+          aspectRatio: "1 / 1", width: "100%", minWidth: 0,
+          borderRadius: "var(--radius-sm)",
+          border: sel ? "2px solid var(--ink-primary)" : "2px solid transparent",
+          background: tileColor(iv, mode, maxLoss), cursor: "pointer", padding: 0,
+          transform: hov ? "scale(1.18)" : "scale(1)", opacity: dim ? 0.45 : 1,
+          transition: "transform var(--dur-fast) var(--ease-out-power3), opacity var(--dur-fast) ease, border-color var(--dur-fast) ease",
+          boxShadow: sel ? "var(--shadow-pop)" : "none", zIndex: hov || sel ? 2 : 1, position: "relative",
+        },
+      });
+    }));
 }
 
 function HeatLegend({ mode }) {
@@ -78,7 +95,24 @@ function DetailStat({ k, v, tone }) {
     React.createElement("span", { style: { fontSize: 19, fontWeight: 600, letterSpacing: "-0.01em", color: tone || "var(--ink-primary)" } }, v));
 }
 
-function InverterDetail({ iv, onClose, onDispatch }) {
+function InverterDetail({ iv, plantKey, onClose, onDispatch }) {
+  const placeholder = !iv.timeline || iv.timeline.length === 0;
+  const [tlItems, setTlItems]     = useState(iv.timeline || []);
+  const [narrative, setNarrative] = useState(iv.narrative || "");
+  const [loading, setLoading]     = useState(false);
+
+  useEffect(() => {
+    setTlItems(iv.timeline || []);
+    setNarrative(iv.narrative || "");
+    if (placeholder && iv.id) {
+      setLoading(true);
+      SOLAR.fetchTimeline(iv.id, plantKey || "A").then(items => {
+        if (items && items.length) setTlItems(items);
+        setLoading(false);
+      });
+    }
+  }, [iv.id]);
+
   return React.createElement("div", { key: iv.id, className: "detail-enter", style: { display: "flex", flexDirection: "column", height: "100%", overflow: "hidden" } },
     React.createElement("div", { style: { display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 16 } },
       React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 7 } },
@@ -95,9 +129,10 @@ function InverterDetail({ iv, onClose, onDispatch }) {
         React.createElement(DetailStat, { k: "€ attributed", v: "€" + SOLAR.fmt(iv.lossEur), tone: iv.lossEur > 30000 ? "var(--sev-critical)" : undefined })),
       React.createElement("div", null,
         React.createElement("div", { className: "t-caption-uppercase", style: { marginBottom: 8, display: "flex", alignItems: "center", gap: 7 } },
-          React.createElement(Icon, { name: "sparkles", size: 13, color: "var(--accent-primary)" }), "Forensic life-story · agent reconstructed"),
-        React.createElement("p", { style: { fontSize: 14, lineHeight: 1.6, color: "var(--ink-secondary)", margin: "0 0 18px", textWrap: "pretty" } }, iv.narrative),
-        React.createElement(Timeline, { items: iv.timeline })),
+          React.createElement(Icon, { name: "sparkles", size: 13, color: "var(--accent-primary)" }), "Forensic life-story · agent reconstructed",
+          loading && React.createElement("span", { style: { marginLeft: "auto", fontSize: 11, color: "var(--ink-muted)", fontStyle: "italic" } }, "loading…")),
+        React.createElement("p", { style: { fontSize: 14, lineHeight: 1.6, color: "var(--ink-secondary)", margin: "0 0 18px", textWrap: "pretty" } }, narrative),
+        React.createElement(Timeline, { items: tlItems })),
       React.createElement("div", null,
         React.createElement("div", { className: "t-caption-uppercase", style: { marginBottom: 10 } }, `Anomaly events · ${iv.anomalies.length}`),
         iv.anomalies.length === 0
@@ -152,7 +187,7 @@ function Inverters({ plant, selectedId, onSelect, onDispatch, defaultMode }) {
       !iv && React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10, color: "var(--ink-muted)", fontSize: 13.5, padding: "4px 2px" } },
         React.createElement(Icon, { name: "arrowRight", size: 16 }), "Select any tile to open its 10-year forensic timeline.")),
     iv && React.createElement("div", { style: { background: "var(--surface-soft)", borderRadius: "var(--radius-lg)", padding: 24, height: "100%", maxHeight: "calc(100vh - 210px)", position: "sticky", top: 0 } },
-      React.createElement(InverterDetail, { iv, onClose: () => onSelect(null), onDispatch })));
+      React.createElement(InverterDetail, { iv, plantKey: plant.key, onClose: () => onSelect(null), onDispatch })));
 }
 
 Object.assign(window, { Inverters, VerdictTag });

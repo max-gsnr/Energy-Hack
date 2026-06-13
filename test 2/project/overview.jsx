@@ -19,7 +19,14 @@ function WorstList({ plant, onOpenInverter }) {
   const tiers = [
     { label: "Tier 1 — immediate", sevs: ["critical"] },
     { label: "Tier 2 — schedule", sevs: ["warning"] },
+    { label: "Tier 3 — monitor", sevs: ["watch"] },
   ];
+  const anyFlagged = plant.worst.some((w) => ["critical", "warning", "watch"].includes(w.severity));
+  if (!anyFlagged) {
+    return React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10, color: "var(--ink-muted)", fontSize: 13.5, padding: "8px 2px" } },
+      React.createElement(SevDot, { sev: "healthy" }),
+      "No flagged inverters — the whole fleet is tracking its expected degradation envelope.");
+  }
   return React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 18 } },
     tiers.map((tier) => {
       const rows = plant.worst.filter((w) => tier.sevs.includes(w.severity));
@@ -47,10 +54,30 @@ function HealthBar({ health }) {
     React.createElement("span", { style: { fontSize: 11.5, fontWeight: 600, color: "var(--ink-muted)", width: 30, textAlign: "right" } }, pct + "%"));
 }
 
+function TwinChart({ plant }) {
+  const [view, setView] = useState("month");
+  const btnStyle = (active) => ({
+    padding: "5px 16px", borderRadius: 6, border: "none", cursor: "pointer",
+    fontSize: 12.5, fontWeight: 600, transition: "all 0.15s ease",
+    background: active ? "var(--surface-card)" : "transparent",
+    color: active ? "var(--ink-primary)" : "var(--ink-secondary)",
+    boxShadow: active ? "var(--shadow-pop)" : "none",
+  });
+  return React.createElement("div", null,
+    React.createElement("div", { style: { display: "flex", alignItems: "center", marginBottom: 16 } },
+      React.createElement("div", { style: { display: "inline-flex", background: "var(--surface-soft)", borderRadius: "var(--radius-md)", padding: 3, gap: 2 } },
+        React.createElement("button", { style: btnStyle(view === "year"),  onClick: () => setView("year")  }, "Year"),
+        React.createElement("button", { style: btnStyle(view === "month"), onClick: () => setView("month") }, "Month"))),
+    view === "year"
+      ? React.createElement(YearBars,  { years: plant.years,   height: 240 })
+      : React.createElement(TwinLines, { monthly: plant.monthly, height: 240 }));
+}
+
 function Overview({ plant, onOpenInverter }) {
   const last = plant.years[plant.years.length - 1];
   const lossPct = ((last.gap / last.expected) * 100);
   const totGwh = (plant.totalLossKwh / 1e6);
+  const anomPct = last.expected > 0 ? ((last.anomalyLoss / last.expected) * 100) : 0;
   return React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 18 } },
     // model metadata banner (dark surface)
     React.createElement("div", { style: { background: "var(--surface-dark)", borderRadius: "var(--radius-xl)", padding: "22px 26px", display: "flex", alignItems: "center", gap: 26, flexWrap: "wrap" } },
@@ -68,14 +95,11 @@ function Overview({ plant, onOpenInverter }) {
     React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 14 } },
       React.createElement(Kpi, { label: `Twin-expected ${last.year}`, value: last.expected, decimals: 1, suffix: " GWh", sub: "what a healthy fleet should yield" }),
       React.createElement(Kpi, { label: `Actual ${last.year}`, value: last.actual, decimals: 1, suffix: " GWh", sub: `${last.curtailment.toFixed(1)} GWh of it curtailed` }),
-      React.createElement(Kpi, { label: "Performance loss", value: last.gap, decimals: 1, suffix: " GWh", tone: "var(--accent-glow)", sub: `${lossPct.toFixed(1)}% below the twin` }),
+      React.createElement(Kpi, { label: "Total performance gap", value: last.gap, decimals: 1, suffix: " GWh", tone: "var(--accent-glow)", sub: `${lossPct.toFixed(1)}% of twin · ${last.anomalyLoss.toFixed(1)} GWh anomaly-attributed` }),
       React.createElement(Kpi, { label: "Modelled €-loss (life)", value: plant.totalLossEur, sub: `${totGwh.toFixed(2)} GWh attributed to anomalies`, suffix: "", decimals: 0 })),
-    // charts
-    React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 } },
-      React.createElement(Widget, { title: "Expected vs actual", meta: "GWh PER YEAR | 2019–2025", tone: "soft" },
-        React.createElement(YearBars, { years: plant.years })),
-      React.createElement(Widget, { title: "Twin vs reality", meta: `MONTHLY | ${plant.refYear}`, tone: "soft" },
-        React.createElement(TwinLines, { monthly: plant.monthly }))),
+    // hero chart — full width, Year/Month toggle
+    React.createElement(Widget, { title: "Expected vs twin", meta: `GWH PER YEAR | ${plant.refYear}`, tone: "soft" },
+      React.createElement(TwinChart, { plant })),
     // fleet + worst
     React.createElement("div", { style: { display: "grid", gridTemplateColumns: "320px 1fr", gap: 14 } },
       React.createElement(Widget, { title: "Fleet status", meta: `${plant.count} UNITS`, tone: "soft" },
