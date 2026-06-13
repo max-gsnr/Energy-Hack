@@ -168,7 +168,7 @@ export default function DispatchModal({ finding, onClose, onSent }: Props) {
                   return (
                     <div
                       key={r.email}
-                      className={`contact-card glass p-4 cursor-pointer transition-all rounded-xl ${isOn ? 'ring-2' : 'opacity-60'}`}
+                      className={`contact-card glass p-4 cursor-pointer transition-all rounded-xl ${isOn ? 'is-selected ring-2' : ''}`}
                       style={isOn ? { boxShadow: '0 0 0 2px var(--brand)' } : {}}
                       onClick={() => setSelected(prev => {
                         const n = new Set(prev);
@@ -216,7 +216,7 @@ export default function DispatchModal({ finding, onClose, onSent }: Props) {
           {/* Step 2 – draft */}
           {step === 'draft' && draft && (
             <div ref={draftRef}>
-              <div className="glass p-4 mb-4 rounded-xl">
+              <div className="dispatch-email-preview glass p-4 mb-4 rounded-xl transition-all">
                 <div className="grid grid-cols-2 gap-3 text-xs mb-3">
                   <div>
                     <span style={{ color: 'var(--muted)' }}>To: </span>

@@ -22,10 +22,10 @@ function StatusBar({ emails, filter, setFilter }) {
 }
 
 function EmailRow({ email, active, onClick }) {
-  return React.createElement("button", { onClick, className: "row-hover",
+  return React.createElement("button", { onClick, className: "email-row",
     style: { display: "grid", gridTemplateColumns: "14px 1fr auto", gap: 13, alignItems: "center", width: "100%", textAlign: "left",
       padding: "13px 15px", border: "none", borderRadius: "var(--radius-md)", cursor: "pointer",
-      background: active ? "var(--surface-card)" : undefined, boxShadow: active ? "var(--shadow-pop)" : "none", transition: "all var(--dur-fast) ease" } },
+      boxShadow: active ? "var(--shadow-pop)" : "none", transition: "all var(--dur-fast) ease" } },
     React.createElement(SevDot, { sev: email.severity }),
     React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 4, minWidth: 0 } },
       React.createElement("div", { style: { display: "flex", alignItems: "baseline", gap: 9, minWidth: 0 } },

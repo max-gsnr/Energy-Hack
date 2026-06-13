@@ -25,6 +25,17 @@
   ::-webkit-scrollbar-track { background: transparent; }
 
   .row-hover:hover { background: var(--surface-soft); }
+  .email-row {
+    background: var(--surface-card) !important;
+    opacity: 1 !important;
+    filter: none !important;
+    border: 1px solid transparent !important;
+  }
+  .email-row:hover {
+    background: color-mix(in oklab, var(--surface-soft) 88%, var(--ink-primary) 12%) !important;
+    border-color: color-mix(in oklab, var(--hairline) 72%, var(--ink-muted) 28%) !important;
+  }
+  .email-row:active { background: color-mix(in oklab, var(--surface-soft) 76%, var(--ink-primary) 24%) !important; }
   .icon-btn:hover { filter: brightness(0.97); border-color: color-mix(in oklab, var(--ink-muted) 40%, var(--hairline)); }
   .recip-card:hover { border-color: var(--ink-muted); }
   .chip:hover:not(:disabled) { background: var(--surface-soft); border-color: var(--ink-muted); }

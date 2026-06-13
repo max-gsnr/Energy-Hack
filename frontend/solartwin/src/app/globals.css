@@ -52,6 +52,29 @@ html, body { height: 100%; background: var(--bg); color: var(--text); font-famil
   border-radius: 12px;
 }
 
+.contact-card,
+.dispatch-email-row,
+.dispatch-email-preview {
+  background: var(--bg3) !important;
+  filter: brightness(1.08) !important;
+  opacity: 1 !important;
+}
+
+.contact-card:hover,
+.dispatch-email-row:hover,
+.dispatch-email-preview:hover {
+  background: var(--bg1) !important;
+  filter: brightness(0.86) !important;
+}
+
+.contact-card.is-selected {
+  background: color-mix(in srgb, var(--bg3) 72%, var(--brand) 28%) !important;
+}
+
+.contact-card.is-selected:hover {
+  background: color-mix(in srgb, var(--bg1) 78%, var(--brand) 22%) !important;
+}
+
 /* Tab bar */
 .tab-btn {
   @apply relative px-4 py-2 text-sm font-medium transition-colors rounded-t;

@@ -59,7 +59,7 @@ export default function DispatchTab({ sentEmails, findings, onNew }: Props) {
           ) : (
             <div className="divide-y" style={{ borderColor: 'var(--border)' }}>
               {sentEmails.map((e, i) => (
-                <div key={i} className="px-4 py-3">
+                <div key={i} className="dispatch-email-row px-4 py-3 transition-all">
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-sm font-semibold" style={{ color: 'var(--text)' }}>{e.subject}</span>
                     <span className="chip chip-normal">Sent</span>
@@ -79,7 +79,7 @@ export default function DispatchTab({ sentEmails, findings, onNew }: Props) {
           </div>
           <div className="divide-y" style={{ borderColor: 'var(--border)', maxHeight: 280, overflowY: 'auto' }}>
             {unsent.filter(f => f.severity === 'critical').map(f => (
-              <div key={f.finding_id} className="flex items-center gap-3 px-4 py-3">
+              <div key={f.finding_id} className="dispatch-email-row flex items-center gap-3 px-4 py-3 transition-all">
                 <div className="flex-1 min-w-0">
                   <div className="text-xs font-semibold">{f.inverter_id.replace(/^INV\s+/, '')}</div>
                   <div className="text-[11px] truncate" style={{ color: 'var(--muted)' }}>{f.primary_reason}</div>
