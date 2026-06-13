@@ -226,10 +226,12 @@ def build_long_frame(
         wide = pd.concat(sampled_wide, ignore_index=True)
     errors = _load_error_wide(inverters, wide["timestamp"]) if include_errors else None
     if include_errors and errors is not None:
-        errors = (
-            wide[["timestamp"]].reset_index(drop=True)
+        wide = (
+            wide.reset_index(drop=True)
             .merge(errors.drop_duplicates("timestamp"), on="timestamp", how="left")
         )
+    else:
+        wide = wide.reset_index(drop=True)
 
     base_cols = [
         "timestamp",
@@ -256,23 +258,27 @@ def build_long_frame(
         "irradiation",
         "sun_altitude",
         "ambient_temperature",
-        "module_temperature",
-        "p_norm",
         "pdc_kwp",
+        "p_norm",
     ]
     for inv in inverters:
-        part = wide[base_cols + [inv.p_ac]].rename(columns={inv.p_ac: "p_ac_kw"}).copy()
-        part["inverter_id"] = inv.inverter_id
+        part_cols = base_cols + [inv.p_ac]
+        rename = {inv.p_ac: "p_ac_kw"}
         if include_dc and inv.u_dc and inv.i_dc:
-            part["u_dc_v"] = wide[inv.u_dc]
-            part["i_dc_a"] = wide[inv.i_dc]
-        if include_errors and errors is not None:
+            part_cols += [inv.u_dc, inv.i_dc]
+            rename[inv.u_dc] = "u_dc_v"
+            rename[inv.i_dc] = "i_dc_a"
+        if include_errors:
             error_col = f"{inv.inverter_id} / Error"
             state_col = f"{inv.inverter_id} / Operational State"
-            if error_col in errors.columns:
-                part["error_code"] = errors[error_col].to_numpy()
-            if state_col in errors.columns:
-                part["operational_state"] = errors[state_col].to_numpy()
+            if error_col in wide.columns:
+                part_cols.append(error_col)
+                rename[error_col] = "error_code"
+            if state_col in wide.columns:
+                part_cols.append(state_col)
+                rename[state_col] = "operational_state"
+        part = wide[part_cols].rename(columns=rename).copy()
+        part["inverter_id"] = inv.inverter_id
         meta_row = meta_by_id.loc[inv.inverter_id]
         for col in meta.columns:
             if col != "inverter_id":
