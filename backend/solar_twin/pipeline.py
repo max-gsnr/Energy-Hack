@@ -42,6 +42,10 @@ class TwinConfig:
     fast_degradation_threshold: float = -3.0
     factor_trend_lookback_days: int = 180
     plant: PlantConfig = PLANT_A
+    # Plant A defaults to the leakage-averse exogenous model. For a soiling-focused
+    # plant (B) we prefer the temperature-aware model so thermal derating is
+    # explained away and the rolling factor isolates non-thermal (soiling) loss.
+    prefer_module_temperature: bool = False
 
 
 def _model(numeric: list[str], categorical: list[str], random_state: int) -> Pipeline:
@@ -650,7 +654,12 @@ def run_pipeline(config: TwinConfig, output_dir: Path, artifact_dir: Path) -> di
     exog_cal_mae = exog_metrics[exog_metrics["year"].isin(config.calibration_years)][
         "mae_norm"
     ].mean()
-    use_exogenous = exog_cal_mae <= full_cal_mae * 1.05 + 0.002
+    if config.prefer_module_temperature:
+        # Keep the temperature-aware model unless exogenous-only is clearly better.
+        use_exogenous = exog_cal_mae < full_cal_mae - 0.002
+    else:
+        # Leakage-averse default: keep exogenous unless temperature is clearly better.
+        use_exogenous = exog_cal_mae <= full_cal_mae * 1.05 + 0.002
     selected_model = exog_model if use_exogenous else full_model
     include_module_temperature = not use_exogenous
     numeric, categorical = feature_columns(include_module_temperature)

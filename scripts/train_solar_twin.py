@@ -62,6 +62,9 @@ def main() -> None:
         score_years=parse_years(args.score_years or d["score"]),
         max_inverters=args.max_inverters or None,
         max_rows_per_year=args.max_rows_per_year or None,
+        # Plant B is soiling-focused: model thermal derating so the rolling factor
+        # isolates non-thermal loss rather than conflating it with summer heat.
+        prefer_module_temperature=(args.plant == "B"),
     )
     metrics = run_pipeline(config, Path(output_dir), Path(artifact_dir))
     print("plant:", args.plant)
