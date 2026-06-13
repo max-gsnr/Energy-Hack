@@ -103,6 +103,22 @@
   ],
   "model_summary": "Selected model is with_module_temperature, trained on [2018] and calibrated on [2019].",
   "plant_headline": "Plant A has 2944271.42 kWh modeled performance loss excluding curtailment; estimated curtailment bucket is 1895901.86 kWh.",
+  "plant_health": {
+    "baseline_year": 2018,
+    "excluded_pre_existing_count": 6,
+    "expected_annual_degradation_pct": 0.5,
+    "expected_envelope_factor": 0.965,
+    "fleet_median_factor": 0.9822,
+    "fleet_median_factor_all_inverters": 0.9817,
+    "headline": "Fleet median health factor 0.982 is tracking the expected ~0.5%/yr normal-aging envelope (0.965 after 7 yr); performance issues are isolated to a few outliers.",
+    "latest_year": 2025,
+    "observed_annual_decline_pct_per_year": 0.846,
+    "semantics": "Absolute fleet health vs the expected normal-aging envelope (Layer 1). Independent of per-inverter map status: a whole-fleet/common-mode decline shows up here even when individual tiles look comparable to each other.",
+    "status": "healthy",
+    "status_color": "green",
+    "systemic_shortfall_factor_pts": -0.0172,
+    "years_since_baseline": 7
+  },
   "top_events": [
     {
       "actual_kwh": 0.0,

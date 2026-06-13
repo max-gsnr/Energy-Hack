@@ -112,10 +112,27 @@
     "Unavailable values must be answered as unknown.",
     "Baseline-excluded inverters are pre-existing/anomalous-since-start candidates, not degradation-over-time claims.",
     "Use latest_factor and latest_relative_factor for health/degradation explanations.",
-    "Use degradation_trends for chronic health changes; events are acute outages or acute faults only."
+    "Use degradation_trends for chronic health changes; events are acute outages or acute faults only.",
+    "Per-inverter map status = how far an inverter sits BELOW the expected normal-aging envelope (~0.5%/yr); it is not an absolute pass/fail threshold. Whole-fleet decline is reported separately in plant_health (Layer 1) and must not be hidden by per-tile status."
   ],
   "model_summary": "Selected model is exogenous_only, trained on [2017] and calibrated on [2018].",
   "plant_headline": "Plant A has 999860.05 kWh modeled performance loss excluding curtailment; estimated curtailment bucket is 91874.94 kWh.",
+  "plant_health": {
+    "baseline_year": 2017,
+    "excluded_pre_existing_count": 6,
+    "expected_annual_degradation_pct": 0.5,
+    "expected_envelope_factor": 0.96,
+    "fleet_median_factor": 0.8749,
+    "fleet_median_factor_all_inverters": 0.883,
+    "headline": "Fleet median health factor 0.875 sits 8.5 pts below the expected normal-aging envelope (0.96 after 8 yr) — the fleet is significantly underperforming expected degradation and declining ~1.2%/yr. This systemic gap is the dominant lost-energy signal.",
+    "latest_year": 2025,
+    "observed_annual_decline_pct_per_year": 1.226,
+    "semantics": "Absolute fleet health vs the expected normal-aging envelope (Layer 1). Independent of per-inverter map status: a whole-fleet/common-mode decline shows up here even when individual tiles look comparable to each other.",
+    "status": "significant_systemic_decline",
+    "status_color": "red",
+    "systemic_shortfall_factor_pts": 0.0851,
+    "years_since_baseline": 8
+  },
   "top_events": [
     {
       "actual_kwh": 0.0,
@@ -382,7 +399,7 @@
         "latest_relative_factor": 0.8914,
         "lost_kwh_per_kwp": 1130.9829,
         "outage_samples": 19637,
-        "status": "critical",
+        "status": "warning",
         "total_lost_kwh": 31893.72
       },
       "finding": "INV 01.08.058 has 31893.72 kWh modeled performance loss with latest health factor 0.8207.",
@@ -397,7 +414,7 @@
         "latest_relative_factor": 1.0025,
         "lost_kwh_per_kwp": 1107.8059,
         "outage_samples": 964,
-        "status": "critical",
+        "status": "normal",
         "total_lost_kwh": 31240.13
       },
       "finding": "INV 01.07.045 has 31240.13 kWh modeled performance loss with latest health factor 0.9295.",
@@ -412,7 +429,7 @@
         "latest_relative_factor": 0.9816,
         "lost_kwh_per_kwp": 1074.6546,
         "outage_samples": 16081,
-        "status": "critical",
+        "status": "watch",
         "total_lost_kwh": 29660.47
       },
       "finding": "INV 01.09.062 has 29660.47 kWh modeled performance loss with latest health factor 0.9133.",
@@ -427,7 +444,7 @@
         "latest_relative_factor": 1.0343,
         "lost_kwh_per_kwp": 1673.4419,
         "outage_samples": 1629,
-        "status": "critical",
+        "status": "normal",
         "total_lost_kwh": 28314.64
       },
       "finding": "INV 01.07.051 has 28314.64 kWh modeled performance loss and is anomalous since start of monitoring / pre-existing fault.",
@@ -502,7 +519,7 @@
         "latest_relative_factor": 0.9641,
         "lost_kwh_per_kwp": 840.5394,
         "outage_samples": 7215,
-        "status": "warning",
+        "status": "watch",
         "total_lost_kwh": 23703.21
       },
       "finding": "INV 01.08.057 has 23703.21 kWh modeled performance loss with latest health factor 0.891.",

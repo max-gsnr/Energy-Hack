@@ -13,8 +13,20 @@
   "calibration_years": [
     2018
   ],
+  "degradation_envelope": {
+    "baseline_year": 2017,
+    "envelope_bands_factor_pts": {
+      "critical": 0.16,
+      "warning": 0.09,
+      "watch": 0.04
+    },
+    "expected_annual_degradation_pct": 0.5,
+    "latest_year": 2025,
+    "status_basis": "Per-inverter map status = factor shortfall below the expected normal-aging envelope (1 - 0.005 * years_since_baseline). Replaces absolute factor thresholds.",
+    "years_since_baseline": 8
+  },
   "event_semantics": "events.json contains acute outages and acute faults only; chronic degradation is exported in degradation_trends.json.",
-  "generated_at": "2026-06-13T07:07:30+00:00",
+  "generated_at": "2026-06-13T07:20:36+00:00",
   "rolling_layer_enabled": true,
   "rows_used": 17641185,
   "score_years": [

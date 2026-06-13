@@ -1,5 +1,21 @@
 {
   "lost_kwh_semantics": "performance loss excluding curtailment",
+  "plant_health": {
+    "baseline_year": 2017,
+    "excluded_pre_existing_count": 6,
+    "expected_annual_degradation_pct": 0.5,
+    "expected_envelope_factor": 0.96,
+    "fleet_median_factor": 0.8749,
+    "fleet_median_factor_all_inverters": 0.883,
+    "headline": "Fleet median health factor 0.875 sits 8.5 pts below the expected normal-aging envelope (0.96 after 8 yr) — the fleet is significantly underperforming expected degradation and declining ~1.2%/yr. This systemic gap is the dominant lost-energy signal.",
+    "latest_year": 2025,
+    "observed_annual_decline_pct_per_year": 1.226,
+    "semantics": "Absolute fleet health vs the expected normal-aging envelope (Layer 1). Independent of per-inverter map status: a whole-fleet/common-mode decline shows up here even when individual tiles look comparable to each other.",
+    "status": "significant_systemic_decline",
+    "status_color": "red",
+    "systemic_shortfall_factor_pts": 0.0851,
+    "years_since_baseline": 8
+  },
   "reconciliation": "actual_kwh + lost_kwh + curtailment_kwh - overperformance_offset_kwh = expected_kwh",
   "sample_count_semantics": {
     "fast_degradation_samples": "5-minute chronic trend-state rows, not independent events.",

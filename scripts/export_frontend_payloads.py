@@ -129,10 +129,39 @@ REQUIRED_COLUMNS = {
 }
 
 
+# Legacy absolute factor thresholds. Retained ONLY for event severity / backward
+# compatibility in exported metadata. Per-inverter map status no longer uses these
+# (see the degradation-envelope logic below): absolute thresholds against a fresh
+# baseline trip normal multi-year aging and flag almost the whole fleet.
 FACTOR_THRESHOLDS = {
     "critical": 0.80,
     "warning": 0.92,
     "watch": 0.97,
+}
+
+
+# ── Expected-degradation envelope (per-inverter map status) ──────────────────
+# Normal crystalline-silicon PV ages ~0.5%/yr. The rolling health factor is
+# measured against a frozen baseline-year model (factor 1.0 = baseline-year
+# performance), so a fleet that has simply aged N years is EXPECTED to sit near
+# (1 - 0.005*N), not at 1.0. Per-inverter status is therefore anchored to this
+# envelope: aging along it = normal; the tier is how far BELOW it an inverter
+# sits (in factor points). If the whole fleet is below, they all flag — that is
+# correct and is also surfaced (loudly) as the absolute plant-health KPI, so the
+# systemic/common-mode signal is never hidden.
+EXPECTED_ANNUAL_DEGRADATION = 0.005  # 0.5%/yr normal-aging envelope slope
+
+# Shortfall (factor points below the envelope) at which each tier starts.
+ENVELOPE_BANDS = {
+    "watch": 0.04,
+    "warning": 0.09,
+    "critical": 0.16,
+}
+
+# Absolute fleet-vs-envelope shortfall thresholds for the plant-health KPI label.
+PLANT_HEALTH_BANDS = {
+    "mild_systemic_underperformance": 0.02,
+    "significant_systemic_decline": 0.06,
 }
 
 
@@ -278,19 +307,34 @@ def severity_thresholds(rankings: pd.DataFrame, metadata: pd.DataFrame) -> dict[
     }
 
 
-def inverter_status(
-    latest_factor: float | None, lost_kwh_per_kwp: float | None, thresholds: dict[str, Any]
-) -> str:
-    lost_thresholds = thresholds["lost_kwh_per_kwp"]
-    factor = latest_factor if latest_factor is not None else math.inf
-    loss = lost_kwh_per_kwp if lost_kwh_per_kwp is not None else -math.inf
-    if factor < FACTOR_THRESHOLDS["critical"] or loss >= lost_thresholds["critical_high"]:
-        return "critical"
-    if factor < FACTOR_THRESHOLDS["warning"] or loss >= lost_thresholds["warning_med"]:
-        return "warning"
-    if factor < FACTOR_THRESHOLDS["watch"] or loss >= lost_thresholds["watch_low"]:
-        return "watch"
-    return "normal"
+def expected_envelope_factor(years_since_baseline: float) -> float:
+    """Expected rolling health factor after `years_since_baseline` of normal aging."""
+    years = max(0.0, float(years_since_baseline))
+    return 1.0 - EXPECTED_ANNUAL_DEGRADATION * years
+
+
+def envelope_status(
+    latest_factor: float | None, years_since_baseline: float
+) -> tuple[str, float | None, float | None]:
+    """Per-inverter status anchored to the expected-degradation envelope.
+
+    Returns (status, expected_factor, shortfall) where shortfall is the number of
+    factor points the inverter sits BELOW the normal-aging envelope (>0 = below,
+    <=0 = tracking or better than expected aging).
+    """
+    expected = expected_envelope_factor(years_since_baseline)
+    if latest_factor is None:
+        return "missing", round(expected, 4), None
+    shortfall = expected - float(latest_factor)
+    if shortfall >= ENVELOPE_BANDS["critical"]:
+        status = "critical"
+    elif shortfall >= ENVELOPE_BANDS["warning"]:
+        status = "warning"
+    elif shortfall >= ENVELOPE_BANDS["watch"]:
+        status = "watch"
+    else:
+        status = "normal"
+    return status, round(expected, 4), round(shortfall, 4)
 
 
 def event_severity(
@@ -307,18 +351,31 @@ def event_severity(
     return "normal"
 
 
-def primary_reason(status: str, baseline_excluded: bool, latest_factor: float | None) -> str:
+def primary_reason(
+    status: str,
+    baseline_excluded: bool,
+    latest_factor: float | None,
+    shortfall: float | None = None,
+) -> str:
     if baseline_excluded:
         return PRE_EXISTING_TEXT
-    if latest_factor is not None and latest_factor < FACTOR_THRESHOLDS["critical"]:
-        return "Low rolling health factor relative to expected normalized output."
+    pts = f"{round(shortfall * 100, 1)} pts" if shortfall is not None else "several pts"
     if status == "critical":
-        return "High capacity-normalized performance loss."
+        return (
+            f"Health factor ~{pts} below the expected normal-aging envelope "
+            "(~0.5%/yr); a clear outlier versus expected degradation."
+        )
     if status == "warning":
-        return "Elevated capacity-normalized loss or reduced rolling health factor."
+        return (
+            f"Health factor ~{pts} below the expected normal-aging envelope; "
+            "underperforming expected degradation."
+        )
     if status == "watch":
-        return "Moderate loss or rolling health factor below watch threshold."
-    return "No major modeled performance issue in the exported run."
+        return (
+            f"Health factor ~{pts} below the expected normal-aging envelope; "
+            "mild underperformance to monitor."
+        )
+    return "Tracking the expected normal-aging envelope; no structural outlier signal."
 
 
 def build_plant_summary(plant_daily: pd.DataFrame) -> dict[str, Any]:
@@ -391,12 +448,112 @@ def build_plant_summary(plant_daily: pd.DataFrame) -> dict[str, Any]:
     }
 
 
+def _fleet_factor_trend_pct_per_year(degradation_yearly: list[dict[str, Any]]) -> float | None:
+    """Annual decline (positive = declining) from the yearly median health factor."""
+    points = [
+        (int(r["year"]), float(r["median_factor"]))
+        for r in degradation_yearly
+        if r.get("median_factor") is not None
+    ]
+    if len(points) < 2:
+        return None
+    xs = np.array([p[0] for p in points], dtype=float)
+    ys = np.array([p[1] for p in points], dtype=float)
+    slope = float(np.polyfit(xs, ys, 1)[0])
+    return round(-slope * 100.0, 3)
+
+
+def build_plant_health(
+    rankings: list[dict[str, Any]],
+    degradation_yearly: list[dict[str, Any]],
+    baseline_year: int,
+    latest_year: int,
+) -> dict[str, Any]:
+    """Layer 1 — absolute plant-health KPI.
+
+    The ABSOLUTE fleet health factor versus the expected normal-aging envelope,
+    plus the multi-year trend. Stays loud on systemic / common-mode decline (the
+    real lost-€ signal) and is surfaced as a banner number, NOT as per-tile status.
+    """
+    operational = [
+        r["latest_factor"]
+        for r in rankings
+        if r["latest_factor"] is not None and not r["baseline_excluded"]
+    ]
+    all_factors = [r["latest_factor"] for r in rankings if r["latest_factor"] is not None]
+    median_op = float(np.median(operational)) if operational else None
+    median_all = float(np.median(all_factors)) if all_factors else None
+
+    years = max(0, latest_year - baseline_year)
+    envelope = expected_envelope_factor(years)
+    shortfall = None if median_op is None else round(envelope - median_op, 4)
+    trend = _fleet_factor_trend_pct_per_year(degradation_yearly)
+
+    if shortfall is None:
+        status = "unknown"
+    elif shortfall >= PLANT_HEALTH_BANDS["significant_systemic_decline"]:
+        status = "significant_systemic_decline"
+    elif shortfall >= PLANT_HEALTH_BANDS["mild_systemic_underperformance"]:
+        status = "mild_systemic_underperformance"
+    else:
+        status = "healthy"
+
+    status_color = {
+        "significant_systemic_decline": "red",
+        "mild_systemic_underperformance": "orange",
+        "healthy": "green",
+        "unknown": "gray",
+    }[status]
+
+    if median_op is None:
+        headline = "Fleet health factor unavailable for this run."
+    elif status == "healthy":
+        headline = (
+            f"Fleet median health factor {round(median_op, 3)} is tracking the expected "
+            f"~{EXPECTED_ANNUAL_DEGRADATION * 100:.1f}%/yr normal-aging envelope ({round(envelope, 3)} "
+            f"after {years} yr); performance issues are isolated to a few outliers."
+        )
+    else:
+        descriptor = (
+            "significantly" if status == "significant_systemic_decline" else "mildly"
+        )
+        trend_txt = f" and declining ~{trend:.1f}%/yr" if trend is not None else ""
+        headline = (
+            f"Fleet median health factor {round(median_op, 3)} sits {round(shortfall * 100, 1)} pts "
+            f"below the expected normal-aging envelope ({round(envelope, 3)} after {years} yr) — "
+            f"the fleet is {descriptor} underperforming expected degradation{trend_txt}. "
+            "This systemic gap is the dominant lost-energy signal."
+        )
+
+    return {
+        "status": status,
+        "status_color": status_color,
+        "fleet_median_factor": None if median_op is None else round(median_op, 4),
+        "fleet_median_factor_all_inverters": None if median_all is None else round(median_all, 4),
+        "expected_envelope_factor": round(envelope, 4),
+        "expected_annual_degradation_pct": round(EXPECTED_ANNUAL_DEGRADATION * 100, 2),
+        "systemic_shortfall_factor_pts": None if shortfall is None else round(shortfall, 4),
+        "observed_annual_decline_pct_per_year": trend,
+        "baseline_year": int(baseline_year),
+        "latest_year": int(latest_year),
+        "years_since_baseline": int(years),
+        "excluded_pre_existing_count": sum(1 for r in rankings if r["baseline_excluded"]),
+        "headline": headline,
+        "semantics": (
+            "Absolute fleet health vs the expected normal-aging envelope (Layer 1). "
+            "Independent of per-inverter map status: a whole-fleet/common-mode decline "
+            "shows up here even when individual tiles look comparable to each other."
+        ),
+    }
+
+
 def enrich_rankings(
     rankings: pd.DataFrame,
     metadata: pd.DataFrame,
     factors: pd.DataFrame,
     baseline_excluded: set[str],
     thresholds: dict[str, Any],
+    years_since_baseline: float,
 ) -> list[dict[str, Any]]:
     merged = (
         rankings.merge(metadata, on="inverter_id", how="left")
@@ -411,7 +568,7 @@ def enrich_rankings(
         lost_per_kwp = None if not pdc_kwp else float(lost) / float(pdc_kwp)
         factor = finite_or_none(row.get("latest_factor"), 4)
         relative_factor = finite_or_none(row.get("latest_relative_factor"), 4)
-        status = inverter_status(factor, lost_per_kwp, thresholds)
+        status, expected_factor, shortfall = envelope_status(factor, years_since_baseline)
         excluded = row["inverter_id"] in baseline_excluded
         output.append(
             {
@@ -435,7 +592,10 @@ def enrich_rankings(
                 "baseline_excluded": excluded,
                 "primary_status": status,
                 "status_color": STATUS_COLORS[status],
-                "primary_reason": primary_reason(status, excluded, factor),
+                "status_basis": "degradation_envelope",
+                "expected_factor_envelope": expected_factor,
+                "factor_shortfall_vs_envelope": shortfall,
+                "primary_reason": primary_reason(status, excluded, factor, shortfall),
             }
         )
     return output
@@ -462,11 +622,14 @@ def build_inverter_map(rankings: list[dict[str, Any]]) -> list[dict[str, Any]]:
                     "column": col,
                     "status": item["primary_status"],
                     "status_color": item["status_color"],
+                    "status_basis": item.get("status_basis", "degradation_envelope"),
                     "baseline_excluded": item["baseline_excluded"],
                     "total_lost_kwh": item["total_lost_kwh"],
                     "lost_kwh_per_kwp": item["lost_kwh_per_kwp"],
                     "latest_factor": item["latest_factor"],
                     "latest_relative_factor": item["latest_relative_factor"],
+                    "expected_factor_envelope": item.get("expected_factor_envelope"),
+                    "factor_shortfall_vs_envelope": item.get("factor_shortfall_vs_envelope"),
                     "primary_reason": item["primary_reason"],
                 }
             )
@@ -597,6 +760,7 @@ def build_agent_context(
 ) -> dict[str, Any]:
     total_lost = plant_summary["total_lost_kwh"]
     total_curtailment = plant_summary["total_curtailment_kwh"]
+    plant_health = plant_summary.get("plant_health", {})
     top_findings = []
     for item in rankings[:10]:
         if item["baseline_excluded"]:
@@ -636,6 +800,7 @@ def build_agent_context(
             f"Plant A has {total_lost} kWh modeled performance loss excluding curtailment; "
             f"estimated curtailment bucket is {total_curtailment} kWh."
         ),
+        "plant_health": plant_health,
         "model_summary": (
             f"Selected model is {run_summary['selected_model']}, trained on "
             f"{run_summary.get('train_years', 'unknown')} and calibrated on "
@@ -648,6 +813,9 @@ def build_agent_context(
             "Baseline-excluded inverters are pre-existing/anomalous-since-start candidates, not degradation-over-time claims.",
             "Use latest_factor and latest_relative_factor for health/degradation explanations.",
             "Use degradation_trends for chronic health changes; events are acute outages or acute faults only.",
+            "Per-inverter map status = how far an inverter sits BELOW the expected normal-aging "
+            "envelope (~0.5%/yr); it is not an absolute pass/fail threshold. Whole-fleet decline is "
+            "reported separately in plant_health (Layer 1) and must not be hidden by per-tile status.",
         ],
         "top_findings": top_findings,
         "top_events": events[:10],
@@ -834,10 +1002,22 @@ def export_payloads(input_dir: Path, output_dir: Path) -> None:
     factors = canonical_factors(data.rolling)
     thresholds = severity_thresholds(data.rankings, data.metadata)
     plant_summary = build_plant_summary(data.plant_daily)
-    rankings = enrich_rankings(data.rankings, data.metadata, factors, baseline_excluded, thresholds)
+
+    train_years = data.run_summary.get("train_years") or [2017]
+    score_years = data.run_summary.get("score_years") or [int(r["year"]) for r in plant_summary["yearly"]]
+    baseline_year = int(max(train_years))
+    latest_year = int(max(score_years))
+    years_since_baseline = max(0, latest_year - baseline_year)
+
+    rankings = enrich_rankings(
+        data.rankings, data.metadata, factors, baseline_excluded, thresholds, years_since_baseline
+    )
     inverter_map = build_inverter_map(rankings)
     events = build_events(data.events, data.metadata, thresholds)
     degradation_trends = build_degradation_trends(data.degradation_trends)
+    plant_summary["plant_health"] = build_plant_health(
+        rankings, degradation_trends["yearly"], baseline_year, latest_year
+    )
 
     selected_model = data.run_summary["selected_model"]
     calibration_key = (
@@ -863,6 +1043,17 @@ def export_payloads(input_dir: Path, output_dir: Path) -> None:
         ),
         "baseline_excluded_inverters": sorted(baseline_excluded),
         "severity_thresholds": thresholds,
+        "degradation_envelope": {
+            "expected_annual_degradation_pct": round(EXPECTED_ANNUAL_DEGRADATION * 100, 2),
+            "envelope_bands_factor_pts": ENVELOPE_BANDS,
+            "baseline_year": baseline_year,
+            "latest_year": latest_year,
+            "years_since_baseline": years_since_baseline,
+            "status_basis": (
+                "Per-inverter map status = factor shortfall below the expected normal-aging "
+                "envelope (1 - 0.005 * years_since_baseline). Replaces absolute factor thresholds."
+            ),
+        },
         "event_semantics": "events.json contains acute outages and acute faults only; chronic degradation is exported in degradation_trends.json.",
     }
     agent_context = build_agent_context(
@@ -887,17 +1078,118 @@ def export_payloads(input_dir: Path, output_dir: Path) -> None:
     validate_outputs(output_dir, plant_summary, rankings, inverter_map, agent_context)
 
 
+def _degradation_envelope_meta(baseline_year: int, latest_year: int) -> dict[str, Any]:
+    years = max(0, latest_year - baseline_year)
+    return {
+        "expected_annual_degradation_pct": round(EXPECTED_ANNUAL_DEGRADATION * 100, 2),
+        "envelope_bands_factor_pts": ENVELOPE_BANDS,
+        "baseline_year": baseline_year,
+        "latest_year": latest_year,
+        "years_since_baseline": years,
+        "status_basis": (
+            "Per-inverter map status = factor shortfall below the expected normal-aging "
+            "envelope (1 - 0.005 * years_since_baseline). Replaces absolute factor thresholds."
+        ),
+    }
+
+
+def restatus_payload_dir(output_dir: Path) -> None:
+    """Recompute per-inverter status + plant-health on an ALREADY-exported payload
+    directory, without the source model-run CSVs.
+
+    Used for Plant B, whose full twin run is not re-runnable in this environment.
+    Only the status/plant-health layers are rewritten; all energy numbers and
+    reconciliation are left untouched.
+    """
+    meta = read_json(output_dir / "model_run_metadata.json")
+    plant_summary = read_json(output_dir / "plant_summary.json")
+    train_years = meta.get("train_years") or [min(int(r["year"]) for r in plant_summary["yearly"])]
+    score_years = meta.get("score_years") or [int(r["year"]) for r in plant_summary["yearly"]]
+    baseline_year = int(max(train_years))
+    latest_year = int(max(score_years))
+    years_since_baseline = max(0, latest_year - baseline_year)
+    baseline_excluded = set(meta.get("baseline_excluded_inverters") or [])
+
+    rankings = read_json(output_dir / "inverter_rankings.json")
+    for item in rankings:
+        factor = item.get("latest_factor")
+        status, expected_factor, shortfall = envelope_status(factor, years_since_baseline)
+        excluded = item["inverter_id"] in baseline_excluded
+        item["baseline_excluded"] = excluded
+        item["primary_status"] = status
+        item["status_color"] = STATUS_COLORS[status]
+        item["status_basis"] = "degradation_envelope"
+        item["expected_factor_envelope"] = expected_factor
+        item["factor_shortfall_vs_envelope"] = shortfall
+        item["primary_reason"] = primary_reason(status, excluded, factor, shortfall)
+    write_json(output_dir / "inverter_rankings.json", rankings)
+
+    rank_by_id = {r["inverter_id"]: r for r in rankings}
+
+    inverter_map = read_json(output_dir / "inverter_map.json")
+    for tile in inverter_map:
+        ranked = rank_by_id.get(tile["inverter_id"])
+        if not ranked:
+            continue
+        tile["status"] = ranked["primary_status"]
+        tile["status_color"] = ranked["status_color"]
+        tile["status_basis"] = "degradation_envelope"
+        tile["baseline_excluded"] = ranked["baseline_excluded"]
+        tile["expected_factor_envelope"] = ranked["expected_factor_envelope"]
+        tile["factor_shortfall_vs_envelope"] = ranked["factor_shortfall_vs_envelope"]
+        tile["primary_reason"] = ranked["primary_reason"]
+    write_json(output_dir / "inverter_map.json", inverter_map)
+
+    degradation = read_json(output_dir / "degradation_trends.json")
+    plant_summary["plant_health"] = build_plant_health(
+        rankings, degradation.get("yearly", []), baseline_year, latest_year
+    )
+    write_json(output_dir / "plant_summary.json", plant_summary)
+
+    meta["degradation_envelope"] = _degradation_envelope_meta(baseline_year, latest_year)
+    write_json(output_dir / "model_run_metadata.json", meta)
+
+    context_path = output_dir / "agent_context.json"
+    if context_path.exists():
+        context = read_json(context_path)
+        context["plant_health"] = plant_summary["plant_health"]
+        write_json(context_path, context)
+
+    detail_dir = output_dir / "inverters"
+    if detail_dir.exists():
+        for path in detail_dir.glob("*.json"):
+            detail = read_json(path)
+            ranked = rank_by_id.get(detail.get("inverter_id"))
+            if not ranked:
+                continue
+            detail["summary"] = ranked
+            detail["baseline_excluded"] = ranked["baseline_excluded"]
+            write_json(path, detail)
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Export frontend/agent JSON payloads from a solar twin model run."
     )
     parser.add_argument("--input-dir", default="outputs/current_model_run")
     parser.add_argument("--output-dir", default="frontend/public/data")
+    parser.add_argument(
+        "--restatus-only",
+        action="store_true",
+        help=(
+            "Recompute per-inverter status + plant-health on an existing payload dir "
+            "(--output-dir) without source CSVs. Used for plants that cannot be re-run."
+        ),
+    )
     return parser.parse_args()
 
 
 def main() -> None:
     args = parse_args()
+    if args.restatus_only:
+        restatus_payload_dir(Path(args.output_dir))
+        print(f"Re-statused payloads in {args.output_dir}")
+        return
     export_payloads(Path(args.input_dir), Path(args.output_dir))
     print(f"Exported frontend payloads to {args.output_dir}")
 

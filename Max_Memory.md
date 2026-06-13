@@ -217,3 +217,46 @@ inverters, very uniform (one module type, 73.92 kWp each), data 2018-2026.
   -> 4.6% flagged). Plant A 2-inverter regression is byte-identical after the fix.
 - Sandbox note: full 107-inverter unsampled run OOMs at 4 GB (same as Plant A);
   run it on a real machine. Validated end-to-end on subsets here.
+
+## Inverter severity fix (OPEN DECISION → resolved)
+
+Problem: per-inverter status used ABSOLUTE factor thresholds (0.80/0.92/0.97)
+against a fresh baseline, so normal multi-year aging tripped almost everything
+(Plant A 64/65 elevated). A second compounding bug: status also used
+`lost_kwh_per_kwp` fleet QUANTILES (0.90/0.75/0.50), which by construction always
+flag the top 50% regardless of health.
+
+Resolution (in `scripts/export_frontend_payloads.py`), three layers, none hiding
+the others:
+1. Plant-health KPI (Layer 1, absolute): `plant_summary.plant_health` — fleet
+   median health factor vs the expected normal-aging envelope + multi-year trend.
+   Stays loud on systemic/common-mode decline. Surfaced as a banner number, not a
+   per-tile status. Also mirrored into `agent_context.plant_health`.
+2. Per-inverter map status (Layer 2): anchored to an EXPECTED-DEGRADATION ENVELOPE
+   `expected_factor = 1 - 0.005*years_since_baseline` (0.5%/yr normal aging from the
+   baseline/train year). Status = factor points BELOW the envelope, banded
+   watch≥0.04 / warning≥0.09 / critical≥0.16. Replaces the absolute thresholds and
+   the quantile-loss logic. Whole-fleet-below still flags everyone (correct) and
+   Layer 1 carries the systemic number.
+3. Acute layer (Layer 3): `events.json` severity left unchanged.
+
+New exported fields (names preserved for the frontend/adapter): rankings/map gain
+`status_basis`, `expected_factor_envelope`, `factor_shortfall_vs_envelope`;
+`plant_summary.plant_health`; `model_run_metadata.degradation_envelope`.
+`baseline_excluded` framing unchanged (pre-existing, never "degrading").
+
+Results after re-export — Plant A: 5 critical / 24 warning / 17 watch / 19 normal
+(was 10/39/15/1), plant_health = significant_systemic_decline (median 0.875 vs 0.96
+envelope, ~1.2%/yr). Plant B: 7 watch / 100 normal (was 11/20/26/50), plant_health
+= healthy (median 0.982 tracking 0.965 envelope). Reconciliation still closes for
+both.
+
+Re-export commands (export only; reads existing CSV/JSON, no retraining):
+- Plant A (has source CSVs): `python scripts/export_frontend_payloads.py
+  --input-dir outputs/current_model_run --output-dir frontend/public/data`
+- Plant B (no local source CSVs — re-status from existing payloads):
+  `python scripts/export_frontend_payloads.py --restatus-only --output-dir
+  frontend/public/data_plant_b`. When Plant B's model run is regenerated on a real
+  machine, run the normal full export instead and the same envelope logic applies.
+- Note: the app venv needs `numpy`+`pandas` for the export script (the agent layer
+  itself stays pandas-free).

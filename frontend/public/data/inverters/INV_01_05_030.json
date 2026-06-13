@@ -60924,7 +60924,9 @@
   "summary": {
     "baseline_excluded": true,
     "error_samples": 842,
+    "expected_factor_envelope": 0.96,
     "explained_fault_samples": 688,
+    "factor_shortfall_vs_envelope": -0.14,
     "fast_degradation_samples": 0,
     "inverter_group": "INV 01.05",
     "inverter_id": "INV 01.05.030",
@@ -60938,6 +60940,7 @@
     "rank": 65,
     "recent_factor_points": 30,
     "slow_degradation_samples": 0,
+    "status_basis": "degradation_envelope",
     "status_color": "green",
     "strong_samples": 772,
     "total_lost_kwh": 489.45,
