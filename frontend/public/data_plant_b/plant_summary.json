@@ -1,0 +1,101 @@
+{
+  "lost_kwh_semantics": "performance loss excluding curtailment",
+  "reconciliation": "actual_kwh + lost_kwh + curtailment_kwh - overperformance_offset_kwh = expected_kwh",
+  "sample_count_semantics": {
+    "fast_degradation_samples": "5-minute chronic trend-state rows, not independent events.",
+    "outage_samples": "5-minute outage flags.",
+    "slow_degradation_samples": "5-minute chronic trend-state rows, not independent events.",
+    "strong_samples": "5-minute acute residual flags."
+  },
+  "total_actual_kwh": 34709852.91,
+  "total_curtailment_kwh": 1895901.86,
+  "total_expected_kwh": 37604146.98,
+  "total_lost_kwh": 2944271.42,
+  "total_overperformance_offset_kwh": 1945879.2,
+  "yearly": [
+    {
+      "actual_kwh": 6731640.05,
+      "curtailment_kwh": 7090.77,
+      "error_samples": 0,
+      "expected_kwh": 6877570.01,
+      "explained_fault_samples": 0,
+      "fast_degradation_samples": 1484462,
+      "lost_kwh": 631064.13,
+      "outage_samples": 93165,
+      "overperformance_offset_kwh": 492224.94,
+      "slow_degradation_samples": 14073,
+      "strong_samples": 122283,
+      "year": 2020
+    },
+    {
+      "actual_kwh": 6142273.23,
+      "curtailment_kwh": 321803.46,
+      "error_samples": 0,
+      "expected_kwh": 6636500.77,
+      "explained_fault_samples": 0,
+      "fast_degradation_samples": 1614241,
+      "lost_kwh": 491694.03,
+      "outage_samples": 30608,
+      "overperformance_offset_kwh": 319269.96,
+      "slow_degradation_samples": 25940,
+      "strong_samples": 39484,
+      "year": 2021
+    },
+    {
+      "actual_kwh": 5929434.34,
+      "curtailment_kwh": 290711.3,
+      "error_samples": 0,
+      "expected_kwh": 6405595.91,
+      "explained_fault_samples": 0,
+      "fast_degradation_samples": 1901113,
+      "lost_kwh": 454626.31,
+      "outage_samples": 12705,
+      "overperformance_offset_kwh": 269176.03,
+      "slow_degradation_samples": 19298,
+      "strong_samples": 19322,
+      "year": 2022
+    },
+    {
+      "actual_kwh": 6560637.02,
+      "curtailment_kwh": 247724.17,
+      "error_samples": 0,
+      "expected_kwh": 7081754.63,
+      "explained_fault_samples": 0,
+      "fast_degradation_samples": 1715375,
+      "lost_kwh": 565880.27,
+      "outage_samples": 16288,
+      "overperformance_offset_kwh": 292486.82,
+      "slow_degradation_samples": 16371,
+      "strong_samples": 39068,
+      "year": 2023
+    },
+    {
+      "actual_kwh": 3213624.0,
+      "curtailment_kwh": 176539.69,
+      "error_samples": 0,
+      "expected_kwh": 3464350.94,
+      "explained_fault_samples": 0,
+      "fast_degradation_samples": 178559,
+      "lost_kwh": 267208.6,
+      "outage_samples": 2910,
+      "overperformance_offset_kwh": 193021.34,
+      "slow_degradation_samples": 12866,
+      "strong_samples": 6882,
+      "year": 2024
+    },
+    {
+      "actual_kwh": 6132244.27,
+      "curtailment_kwh": 852032.47,
+      "error_samples": 0,
+      "expected_kwh": 7138374.71,
+      "explained_fault_samples": 0,
+      "fast_degradation_samples": 1466874,
+      "lost_kwh": 533798.09,
+      "outage_samples": 17103,
+      "overperformance_offset_kwh": 379700.11,
+      "slow_degradation_samples": 30856,
+      "strong_samples": 34809,
+      "year": 2025
+    }
+  ]
+}

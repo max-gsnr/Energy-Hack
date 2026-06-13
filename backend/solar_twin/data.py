@@ -267,6 +267,12 @@ def add_time_features(df: pd.DataFrame) -> pd.DataFrame:
     out["cos_hour"] = np.cos(2 * np.pi * hour_float / 24)
     out["sin_doy"] = np.sin(2 * np.pi * day_of_year / 366)
     out["cos_doy"] = np.cos(2 * np.pi * day_of_year / 366)
+    # Temperature sensors emit sentinel garbage (e.g. 850, -200 on Plant B). Null
+    # physically impossible readings so they never reach the model or temp_delta.
+    # NaN is fine: HistGradientBoosting handles it, and temperature is not in the
+    # dropna-required set, so rows with a bad sensor are kept on their other signals.
+    for col in ("ambient_temperature", "module_temperature"):
+        out[col] = out[col].where(out[col].between(-40, 90))
     out["temp_delta"] = out["module_temperature"] - out["ambient_temperature"]
     # DV/EVU are percent of allowed feed-in: 100 = full export (no curtailment),
     # values below 100 (e.g. 60/30/0) are utility throttling. NaN = unknown, so
