@@ -15,6 +15,10 @@ PLANT_A_MAIN = ROOT / "Data/Plant_A/Main-monitoring-data/main_monitoring_data.pa
 PLANT_A_ERRORS = ROOT / "Data/Plant_A/Errorcodes/errorcodes.parquet"
 PLANT_A_SYSTEM = ROOT / "Data/Plant_A/Additional_Data/System_Overview.xlsx"
 
+PLANT_B_MAIN = ROOT / "Data/Plant_B/Main-monitoring-data/main_monitoring_data_plant_b.parquet"
+PLANT_B_SYSTEM = ROOT / "Data/Plant_B/Additional_Data/System_Overview_plant b.xlsx"
+
+# Plant A sensor naming.
 ENV_COLUMNS = {
     "irradiation": "Plant / Irradiation_average (W/m²)",
     "sun_altitude": "Plant / Altitude (°)",
@@ -23,6 +27,56 @@ ENV_COLUMNS = {
     "dv": "DRD11A / DV (%)",
     "evu": "DRD11A / EVU (%)",
 }
+
+# Plant B uses different sensor labels and has no DC / error channels.
+ENV_COLUMNS_B = {
+    "irradiation": "Plant / Irradiation_average (W/m²)",
+    "sun_altitude": "Plant / Altitude (°)",
+    "ambient_temperature": "Temperatur / Ambient (°C)",
+    "module_temperature": "Temperatur / Module (°C)",
+    "dv": "SIL11A / DV (%)",
+    "evu": "SIL11A / EVU (%)",
+}
+
+
+@dataclass(frozen=True)
+class PlantConfig:
+    """Per-plant data layout. Plant A has DC + error channels and a datetime
+    index; Plant B is AC-only with an explicit timestamp column."""
+
+    name: str
+    main_path: Path
+    system_path: Path
+    env_columns: dict
+    has_dc: bool = True
+    errors_path: Path | None = None
+    timestamp_in_index: bool = True
+    split_row_marker: str | None = None
+
+
+PLANT_A = PlantConfig(
+    name="A",
+    main_path=PLANT_A_MAIN,
+    system_path=PLANT_A_SYSTEM,
+    env_columns=ENV_COLUMNS,
+    has_dc=True,
+    errors_path=PLANT_A_ERRORS,
+    timestamp_in_index=True,
+    split_row_marker="004.02",
+)
+
+PLANT_B = PlantConfig(
+    name="B",
+    main_path=PLANT_B_MAIN,
+    system_path=PLANT_B_SYSTEM,
+    env_columns=ENV_COLUMNS_B,
+    has_dc=False,
+    errors_path=None,
+    timestamp_in_index=True,
+    split_row_marker=None,
+)
+
+PLANTS = {"A": PLANT_A, "B": PLANT_B}
 
 
 @dataclass(frozen=True)
@@ -33,28 +87,26 @@ class InverterColumns:
     i_dc: str | None
 
 
-def plant_a_columns(path: Path = PLANT_A_MAIN) -> list[str]:
-    return pq.ParquetFile(path).schema.names
+def plant_columns(plant: PlantConfig = PLANT_A) -> list[str]:
+    return pq.ParquetFile(plant.main_path).schema.names
 
 
-def inverter_columns(path: Path = PLANT_A_MAIN) -> list[InverterColumns]:
-    columns = plant_a_columns(path)
+def inverter_columns(plant: PlantConfig = PLANT_A) -> list[InverterColumns]:
+    columns = plant_columns(plant)
     p_ac_cols = sorted(
         c for c in columns if c.startswith("INV ") and c.endswith("/ P_AC (kW)")
     )
     by_id: list[InverterColumns] = []
     for p_ac in p_ac_cols:
         inverter_id = p_ac.split(" / ")[0]
+        u_dc = f"{inverter_id} / U_DC (V)"
+        i_dc = f"{inverter_id} / I_DC_SUM (A)"
         by_id.append(
             InverterColumns(
                 inverter_id=inverter_id,
                 p_ac=p_ac,
-                u_dc=f"{inverter_id} / U_DC (V)"
-                if f"{inverter_id} / U_DC (V)" in columns
-                else None,
-                i_dc=f"{inverter_id} / I_DC_SUM (A)"
-                if f"{inverter_id} / I_DC_SUM (A)" in columns
-                else None,
+                u_dc=u_dc if (plant.has_dc and u_dc in columns) else None,
+                i_dc=i_dc if (plant.has_dc and i_dc in columns) else None,
             )
         )
     return by_id
@@ -68,8 +120,9 @@ def _normalize_wr_id(value: object) -> str | None:
 
 
 def load_system_overview(
-    path: Path = PLANT_A_SYSTEM, measured_ids: list[str] | None = None
+    plant: PlantConfig = PLANT_A, measured_ids: list[str] | None = None
 ) -> pd.DataFrame:
+    path = plant.system_path
     raw = pd.read_excel(path, sheet_name=0, header=None)
     header_idx = None
     for idx, row in raw.iterrows():
@@ -92,9 +145,13 @@ def load_system_overview(
 
     # Plant A has one split/extra overview row that is not represented as a
     # separate monitoring inverter. Drop it when aligning metadata to sensors.
-    if measured_ids is not None and len(meta) == len(measured_ids) + 1:
+    if (
+        plant.split_row_marker is not None
+        and measured_ids is not None
+        and len(meta) == len(measured_ids) + 1
+    ):
         split_row = meta["Description"].astype(str).str.contains(
-            "004.02", regex=False, na=False
+            plant.split_row_marker, regex=False, na=False
         )
         if split_row.any():
             meta = meta[~split_row].copy()
@@ -145,23 +202,27 @@ def load_system_overview(
     return meta
 
 
-def select_inverters(max_inverters: int | None = None) -> list[InverterColumns]:
-    columns = inverter_columns()
+def select_inverters(
+    max_inverters: int | None = None, plant: PlantConfig = PLANT_A
+) -> list[InverterColumns]:
+    columns = inverter_columns(plant)
     if max_inverters and max_inverters > 0:
         return columns[:max_inverters]
     return columns
 
 
 def _load_error_wide(
-    inverters: list[InverterColumns], timestamps: pd.Series | None = None
+    inverters: list[InverterColumns],
+    timestamps: pd.Series | None = None,
+    plant: PlantConfig = PLANT_A,
 ) -> pd.DataFrame:
     error_cols = []
     for inv in inverters:
         error_cols.append(f"{inv.inverter_id} / Error")
         error_cols.append(f"{inv.inverter_id} / Operational State")
-    available = set(pq.ParquetFile(PLANT_A_ERRORS).schema.names)
+    available = set(pq.ParquetFile(plant.errors_path).schema.names)
     cols = [col for col in error_cols if col in available]
-    errors = pd.read_parquet(PLANT_A_ERRORS, columns=cols)
+    errors = pd.read_parquet(plant.errors_path, columns=cols)
     errors["timestamp"] = pd.to_datetime(errors.index, errors="coerce")
     if timestamps is not None:
         keep = pd.Index(pd.to_datetime(timestamps, errors="coerce"))
@@ -169,16 +230,26 @@ def _load_error_wide(
     return errors.reset_index(drop=True)
 
 
-def load_wide_frame(inverters: list[InverterColumns], include_dc: bool = True) -> pd.DataFrame:
-    cols = list(ENV_COLUMNS.values()) + [inv.p_ac for inv in inverters]
-    if include_dc:
+def load_wide_frame(
+    inverters: list[InverterColumns],
+    include_dc: bool = True,
+    plant: PlantConfig = PLANT_A,
+) -> pd.DataFrame:
+    env = plant.env_columns
+    cols = list(env.values()) + [inv.p_ac for inv in inverters]
+    if include_dc and plant.has_dc:
         cols += [inv.u_dc for inv in inverters if inv.u_dc]
         cols += [inv.i_dc for inv in inverters if inv.i_dc]
-    df = pd.read_parquet(PLANT_A_MAIN, columns=cols)
-    df = df.rename(columns={source: target for target, source in ENV_COLUMNS.items()})
+    if not plant.timestamp_in_index:
+        cols = ["timestamp"] + cols
+    df = pd.read_parquet(plant.main_path, columns=cols)
+    df = df.rename(columns={source: target for target, source in env.items()})
     float_cols = df.select_dtypes("float64").columns
     df[float_cols] = df[float_cols].astype("float32")
-    df["timestamp"] = pd.to_datetime(df.index, errors="coerce")
+    if plant.timestamp_in_index:
+        df["timestamp"] = pd.to_datetime(df.index, errors="coerce")
+    else:
+        df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce")
     return df
 
 
@@ -196,9 +267,11 @@ def add_time_features(df: pd.DataFrame) -> pd.DataFrame:
     out["sin_doy"] = np.sin(2 * np.pi * day_of_year / 366)
     out["cos_doy"] = np.cos(2 * np.pi * day_of_year / 366)
     out["temp_delta"] = out["module_temperature"] - out["ambient_temperature"]
-    out["curtailment_active"] = (
-        out[["dv", "evu"]].fillna(0).max(axis=1) > 0
-    )
+    # DV/EVU are percent of allowed feed-in: 100 = full export (no curtailment),
+    # values below 100 (e.g. 60/30/0) are utility throttling. NaN = unknown, so
+    # treat it as not curtailed. Curtailment is the most restrictive of the two.
+    curt_pct = out[["dv", "evu"]].fillna(100).min(axis=1)
+    out["curtailment_active"] = curt_pct < 99
     return out
 
 
@@ -208,11 +281,14 @@ def build_long_frame(
     include_errors: bool = True,
     max_rows_per_year: int | None = None,
     random_state: int = 42,
+    plant: PlantConfig = PLANT_A,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
-    inverters = select_inverters(max_inverters)
+    include_dc = include_dc and plant.has_dc
+    include_errors = include_errors and plant.errors_path is not None
+    inverters = select_inverters(max_inverters, plant)
     measured_ids = [inv.inverter_id for inv in inverters]
-    meta = load_system_overview(measured_ids=measured_ids)
-    wide = add_time_features(load_wide_frame(inverters, include_dc=include_dc))
+    meta = load_system_overview(plant, measured_ids=measured_ids)
+    wide = add_time_features(load_wide_frame(inverters, include_dc=include_dc, plant=plant))
     wide = wide[(wide["irradiation"] > 100) & (wide["sun_altitude"] > 8)].copy()
     if max_rows_per_year and max_rows_per_year > 0:
         wide_rows_per_year = max(
@@ -224,7 +300,7 @@ def build_long_frame(
                 frame.sample(min(len(frame), wide_rows_per_year), random_state=random_state)
             )
         wide = pd.concat(sampled_wide, ignore_index=True)
-    errors = _load_error_wide(inverters, wide["timestamp"]) if include_errors else None
+    errors = _load_error_wide(inverters, wide["timestamp"], plant) if include_errors else None
     if include_errors and errors is not None:
         wide = (
             wide.reset_index(drop=True)

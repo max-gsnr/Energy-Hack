@@ -195,3 +195,25 @@ Full rerun after the fix:
 - `events.json` now has 377 acute events total
 - 2019 acute event count is 270 critical outages and 15 warning acute faults
 - 2019 chronic trend state is still visible separately as 8,566 fast-degradation days in `degradation_trends.json`
+
+## Plant B twin (added)
+
+The loader is now multi-plant via `PlantConfig` in `backend/solar_twin/data.py`
+(`PLANT_A` default, `PLANT_B`). Plant B is AC-only (no DC, no error codes), 107
+inverters, very uniform (one module type, 73.92 kWp each), data 2018-2026.
+- Run it: `python scripts/train_solar_twin.py --plant B`
+  (defaults: train 2018, calibrate 2019, score 2020-2025; outputs to
+  `outputs/plant_b_twin/`). Same frozen AC twin + rolling layer as Plant A; the
+  DC diagnostic auto-reports `dc_unavailable`.
+- The frozen AC twin and `export_frontend_payloads.py` are plant-agnostic and work
+  unchanged on Plant B outputs.
+- Soiling shows up directly in the rolling health factor: a seasonal envelope
+  (factor ~1.02 in winter, dipping to ~0.96 in mid-summer) = dry-season soiling
+  accumulation and rain recovery. This is Plant B's intended story.
+- Fixed a real curtailment bug along the way: DV/EVU are percent of allowed
+  feed-in (100 = normal, <100 = throttling), so the old `max(dv,evu)>0` flag
+  marked normal operation as curtailment. Now `min(dv,evu) < 99`. Was masked on
+  Plant A (DV/EVU NaN in the loss-heavy 2019-2020 window) but broke Plant B (78%
+  -> 4.6% flagged). Plant A 2-inverter regression is byte-identical after the fix.
+- Sandbox note: full 107-inverter unsampled run OOMs at 4 GB (same as Plant A);
+  run it on a real machine. Validated end-to-end on subsets here.

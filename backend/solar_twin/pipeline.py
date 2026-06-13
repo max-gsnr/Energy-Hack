@@ -13,7 +13,7 @@ from sklearn.metrics import mean_absolute_error, r2_score
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OrdinalEncoder
 
-from .data import build_long_frame, feature_columns
+from .data import PLANT_A, PlantConfig, build_long_frame, feature_columns
 from .rolling import (
     clean_day_filter,
     daily_clean_factor,
@@ -41,6 +41,7 @@ class TwinConfig:
     cohort_key: str = "module_type"
     fast_degradation_threshold: float = -3.0
     factor_trend_lookback_days: int = 180
+    plant: PlantConfig = PLANT_A
 
 
 def _model(numeric: list[str], categorical: list[str], random_state: int) -> Pipeline:
@@ -616,6 +617,7 @@ def run_pipeline(config: TwinConfig, output_dir: Path, artifact_dir: Path) -> di
         include_dc=True,
         max_rows_per_year=config.max_rows_per_year,
         random_state=config.random_state,
+        plant=config.plant,
     )
     frame, baseline_stats = vet_baseline(frame, config.train_years)
 
