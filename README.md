@@ -4,6 +4,8 @@ Hackathon project for Enerparc track 2.1: **Digital Twin of a Solar Plant**.
 
 The core task is a data twin, not a photorealistic 3D model. We learn normal inverter behavior from historical monitoring data, normalize across different inverter/module configurations, compare actual vs expected output over later years, and visualize the resulting deviations.
 
+https://app.arcade.software/share/BHRnfShFdJzgBbunfY2k
+
 ## What We Are Building
 
 - ML model for expected normalized inverter output.
